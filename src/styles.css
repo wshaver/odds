@@ -84,20 +84,13 @@ button:disabled {
 .trainer-layout {
   display: grid;
   gap: 16px;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(280px, 1.25fr) minmax(280px, 0.85fr);
   margin: 0 auto;
   max-width: 1120px;
 }
 
-.trainer-main {
-  display: grid;
-  gap: 16px;
-  grid-template-columns: minmax(280px, 1.15fr) minmax(260px, 0.85fr);
-}
-
 .prompt-panel,
-.answer-panel,
-.feedback-panel {
+.answer-panel {
   background: #ffffff;
   border: 1px solid #d9ddd5;
   border-radius: 8px;
@@ -184,6 +177,26 @@ button:disabled {
   background: #dfe8e3;
 }
 
+.answer-button:disabled {
+  opacity: 1;
+}
+
+.answer-button.answer-correct {
+  background: #dff3e6;
+  border-color: #4f9d67;
+  color: #0f5b2e;
+}
+
+.answer-button.answer-incorrect {
+  background: #fde8e8;
+  border-color: #c65353;
+  color: #8a1f1f;
+}
+
+.win-chance-details {
+  margin-top: 14px;
+}
+
 .feedback-placeholder {
   color: #596157;
   margin: 0;
@@ -203,8 +216,8 @@ button:disabled {
 }
 
 .result-miss {
-  background: #fff0d9;
-  color: #764600;
+  background: #fde8e8;
+  color: #8a1f1f;
 }
 
 .feedback-list {
@@ -277,7 +290,6 @@ button:disabled {
   }
 
   .top-bar,
-  .trainer-main,
   .trainer-layout {
     grid-template-columns: 1fr;
   }

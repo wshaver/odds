@@ -26,6 +26,12 @@ type AnswerState = {
   correct: boolean;
 };
 
+type AnswerChoice = {
+  key: string;
+  label: string;
+  correct: boolean;
+};
+
 export function TrainerView({
   prompt,
   onNext,
@@ -52,6 +58,33 @@ export function TrainerView({
       : answer?.key === promptKey
         ? answer
         : null;
+  const answerChoices = useMemo<AnswerChoice[]>(() => {
+    if (answerModel.kind === "odds") {
+      const correctLabel = formatOptionPercent(roundProbability(answerModel.correctProbability));
+
+      return answerModel.options.map((option) => {
+        const label = formatOptionPercent(option);
+
+        return {
+          key: label,
+          label,
+          correct: label === correctLabel,
+        };
+      });
+    }
+
+    return (["call", "fold"] as const).map((action) => ({
+      key: action,
+      label: titleCase(action),
+      correct: action === answerModel.correctAction,
+    }));
+  }, [answerModel]);
+  const visibleAnswerChoices =
+    activeAnswer === null
+      ? answerChoices
+      : answerChoices.filter(
+          (choice) => choice.correct || choice.label === activeAnswer.selected,
+        );
 
   useEffect(() => {
     setAnswer(null);
@@ -69,139 +102,123 @@ export function TrainerView({
 
   return (
     <section className="trainer-layout" aria-label="Poker odds trainer">
-      <div className="trainer-main">
-        <div className="prompt-panel">
-          <CardRow label="Hero" cards={prompt.hero} />
-          <CardRow label="Board" cards={prompt.board} />
-
-          <div className="target-line">
-            <span className="section-label">Target hand</span>
-            <strong>{formatHandRank(prompt.target)}</strong>
-          </div>
-
-          {prompt.mode === "bet" ? (
-            <div className="bet-line" aria-label="Bet details">
-              <span>Pot: {prompt.pot}</span>
-              <span>Call: {prompt.call}</span>
-            </div>
-          ) : null}
+      <div className="prompt-panel">
+        <div className="target-line">
+          <span className="section-label">Opponent hand</span>
+          <strong>{formatHandRank(prompt.target)}</strong>
         </div>
+        <CardRow label="Board" cards={prompt.board} />
+        <CardRow label="Player hand" cards={prompt.hero} />
 
-        <div className="answer-panel">
-          <h2>{prompt.mode === "odds" ? "What is the win chance?" : "What is the bet?"}</h2>
-          <div className="answer-grid">
-            {answerModel.kind === "odds"
-              ? answerModel.options.map((option) => {
-                  const selected = formatOptionPercent(option);
-                  const correct =
-                    selected ===
-                    formatOptionPercent(roundProbability(answerModel.correctProbability));
-
-                  return (
-                    <button
-                      className="answer-button"
-                      disabled={activeAnswer !== null}
-                      key={selected}
-                      onClick={() => answerPrompt(selected, correct)}
-                      type="button"
-                    >
-                      {selected}
-                    </button>
-                  );
-                })
-              : (["call", "fold"] as const).map((action) => {
-                  const selected = titleCase(action);
-
-                  return (
-                    <button
-                      className="answer-button"
-                      disabled={activeAnswer !== null}
-                      key={action}
-                      onClick={() =>
-                        answerPrompt(selected, action === answerModel.correctAction)
-                      }
-                      type="button"
-                    >
-                      {selected}
-                    </button>
-                  );
-                })}
+        {prompt.mode === "bet" ? (
+          <div className="bet-line" aria-label="Bet details">
+            <span>Pot: {prompt.pot}</span>
+            <span>Call: {prompt.call}</span>
           </div>
-        </div>
+        ) : null}
       </div>
 
-      <aside className="feedback-panel" aria-live="polite">
-        {activeAnswer === null ? (
-          <p className="feedback-placeholder">Answer to see the card math.</p>
-        ) : (
-          <>
-            <div className={activeAnswer.correct ? "result-correct" : "result-miss"}>
-              {activeAnswer.correct ? "Correct" : "Review"}
-            </div>
-            <dl className="feedback-list">
-              <div>
-                <dt>Selected answer {activeAnswer.selected}</dt>
-                <dd aria-hidden="true">{activeAnswer.selected}</dd>
+      <div className="answer-panel">
+        <h2>{prompt.mode === "odds" ? "What is the win chance?" : "What is the bet?"}</h2>
+        <div className="answer-grid">
+          {visibleAnswerChoices.map((choice) => {
+            const resultClass =
+              activeAnswer === null
+                ? ""
+                : choice.correct
+                  ? "answer-correct"
+                  : choice.label === activeAnswer.selected
+                    ? "answer-incorrect"
+                    : "";
+
+            return (
+              <button
+                className={["answer-button", resultClass].filter(Boolean).join(" ")}
+                disabled={activeAnswer !== null}
+                key={choice.key}
+                onClick={() => answerPrompt(choice.label, choice.correct)}
+                type="button"
+              >
+                {choice.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="win-chance-details" aria-label="Win chance details" aria-live="polite">
+          {activeAnswer === null ? (
+            <p className="feedback-placeholder">Answer to see the card math.</p>
+          ) : (
+            <>
+              <div className={activeAnswer.correct ? "result-correct" : "result-miss"}>
+                {activeAnswer.correct ? "Correct" : "Incorrect"}
               </div>
-              <div>
-                <dt>Win outs {outcomes.win}</dt>
-                <dd aria-hidden="true">{outcomes.win}</dd>
-              </div>
-              <div>
-                <dt>Pushes {outcomes.push}</dt>
-                <dd aria-hidden="true">{outcomes.push}</dd>
-              </div>
-              <div>
-                <dt>Remaining cards {outcomes.remaining}</dt>
-                <dd aria-hidden="true">{outcomes.remaining}</dd>
-              </div>
-              <div>
-                <dt>
-                  Win chance {formatPercent(outcomes.winProbability)} ({outcomes.win} /{" "}
-                  {outcomes.remaining})
-                </dt>
-                <dd aria-hidden="true">
-                  {formatPercent(outcomes.winProbability)} ({outcomes.win} / {outcomes.remaining})
-                </dd>
-              </div>
-              {betRequiredEquity !== null ? (
+              <dl className="feedback-list">
                 <div>
-                  <dt>Required equity {formatPercent(betRequiredEquity)}</dt>
-                  <dd aria-hidden="true">{formatPercent(betRequiredEquity)}</dd>
+                  <dt>Selected answer {activeAnswer.selected}</dt>
+                  <dd aria-hidden="true">{activeAnswer.selected}</dd>
                 </div>
-              ) : null}
-              {betMaxCorrectCall !== null ? (
                 <div>
-                  <dt>Max correct call {formatChipAmount(betMaxCorrectCall)}</dt>
-                  <dd aria-hidden="true">{formatChipAmount(betMaxCorrectCall)}</dd>
+                  <dt>Win outs {outcomes.win}</dt>
+                  <dd aria-hidden="true">{outcomes.win}</dd>
                 </div>
-              ) : null}
-            </dl>
-            <p className="feedback-note">Pushes are neutral and do not count as wins.</p>
-            {hasWinningCards ? (
-              <>
-                <button
-                  className="secondary-button"
-                  onClick={() => setShowWinningCards((current) => !current)}
-                  type="button"
-                >
-                  {showWinningCards ? "Hide winning cards" : "View winning cards"}
-                </button>
-                {showWinningCards ? (
-                  <div className="winning-cards" aria-label="Winning cards">
-                    {outcomes.winningCards.map((card) => (
-                      <CardView card={card} key={`${card.rank}${card.suit}`} />
-                    ))}
+                <div>
+                  <dt>Pushes {outcomes.push}</dt>
+                  <dd aria-hidden="true">{outcomes.push}</dd>
+                </div>
+                <div>
+                  <dt>Remaining cards {outcomes.remaining}</dt>
+                  <dd aria-hidden="true">{outcomes.remaining}</dd>
+                </div>
+                <div>
+                  <dt>
+                    Win chance {formatPercent(outcomes.winProbability)} ({outcomes.win} /{" "}
+                    {outcomes.remaining})
+                  </dt>
+                  <dd aria-hidden="true">
+                    {formatPercent(outcomes.winProbability)} ({outcomes.win} /{" "}
+                    {outcomes.remaining})
+                  </dd>
+                </div>
+                {betRequiredEquity !== null ? (
+                  <div>
+                    <dt>Required equity {formatPercent(betRequiredEquity)}</dt>
+                    <dd aria-hidden="true">{formatPercent(betRequiredEquity)}</dd>
                   </div>
                 ) : null}
-              </>
-            ) : null}
-            <button className="next-button" onClick={onNext} type="button">
-              Next
-            </button>
-          </>
-        )}
-      </aside>
+                {betMaxCorrectCall !== null ? (
+                  <div>
+                    <dt>Max correct call {formatChipAmount(betMaxCorrectCall)}</dt>
+                    <dd aria-hidden="true">{formatChipAmount(betMaxCorrectCall)}</dd>
+                  </div>
+                ) : null}
+              </dl>
+              <p className="feedback-note">Pushes are neutral and do not count as wins.</p>
+              {hasWinningCards ? (
+                <>
+                  <button
+                    className="secondary-button"
+                    onClick={() => setShowWinningCards((current) => !current)}
+                    type="button"
+                  >
+                    {showWinningCards ? "Hide winning cards" : "View winning cards"}
+                  </button>
+                  {showWinningCards ? (
+                    <div className="winning-cards" aria-label="Winning cards">
+                      {outcomes.winningCards.map((card) => (
+                        <CardView card={card} key={`${card.rank}${card.suit}`} />
+                      ))}
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
+              <button className="next-button" onClick={onNext} type="button">
+                Next
+              </button>
+            </>
+          )}
+        </div>
+      </div>
     </section>
   );
 }

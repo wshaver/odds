@@ -29,6 +29,69 @@ function expectedOddsCorrect(prompt: Prompt, selected: string): boolean {
 }
 
 describe("TrainerView", () => {
+  test("orders opponent target, board, and player hand on the left", () => {
+    const prompt = generatePrompt("odds", "TrainerLayoutOrder");
+
+    render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
+
+    const opponent = screen.getByText("Opponent hand");
+    const board = screen.getByText("Board");
+    const player = screen.getByText("Player hand");
+
+    expect(
+      opponent.compareDocumentPosition(board) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      board.compareDocumentPosition(player) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  test("keeps answer feedback in the answer panel and filters choices after an incorrect answer", async () => {
+    const user = userEvent.setup();
+    const prompt = generatePrompt("odds", "TrainerAnswerFilterWrong");
+    const model = getAnswerModel(prompt);
+    if (model.kind !== "odds") {
+      throw new Error("Expected odds prompt");
+    }
+    const correct = optionLabel(Number(model.correctProbability.toFixed(2)));
+    const incorrectOptions = model.options
+      .map((option) => optionLabel(option))
+      .filter((option) => option !== correct);
+    const selected = incorrectOptions[0];
+    const hiddenIncorrect = incorrectOptions[1];
+
+    render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: selected }));
+
+    expect(screen.getByRole("button", { name: selected })).toHaveClass("answer-incorrect");
+    expect(screen.getByRole("button", { name: correct })).toHaveClass("answer-correct");
+    expect(screen.queryByRole("button", { name: hiddenIncorrect })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Win chance details")).toHaveTextContent("Selected answer");
+  });
+
+  test("shows only the selected correct answer after a correct answer", async () => {
+    const user = userEvent.setup();
+    const prompt = generatePrompt("odds", "TrainerAnswerFilterCorrect");
+    const model = getAnswerModel(prompt);
+    if (model.kind !== "odds") {
+      throw new Error("Expected odds prompt");
+    }
+    const correct = optionLabel(Number(model.correctProbability.toFixed(2)));
+    const incorrectOptions = model.options
+      .map((option) => optionLabel(option))
+      .filter((option) => option !== correct);
+
+    render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: correct }));
+
+    expect(screen.getByRole("button", { name: correct })).toHaveClass("answer-correct");
+    for (const incorrect of incorrectOptions) {
+      expect(screen.queryByRole("button", { name: incorrect })).not.toBeInTheDocument();
+    }
+  });
+
   test("answers an odds prompt and shows feedback including remaining cards", async () => {
     const user = userEvent.setup();
     const prompt = generatePrompt("odds", "TrainerOdds1");
@@ -142,9 +205,13 @@ describe("TrainerView", () => {
     expect(screen.getByText(/Selected answer/i)).toHaveTextContent(selected);
     expect(screen.queryByText(/Answer to see the card math/i)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: selected })).toBeDisabled();
-    expect(screen.getByRole("button", { name: optionLabel(model.options[1]) })).toBeDisabled();
 
-    await user.click(screen.getByRole("button", { name: optionLabel(model.options[1]) }));
+    for (const button of screen.getAllByRole("button")) {
+      if (button.classList.contains("answer-button")) {
+        expect(button).toBeDisabled();
+        await user.click(button);
+      }
+    }
 
     expect(onAnswered).not.toHaveBeenCalled();
   });
@@ -172,7 +239,7 @@ describe("TrainerView", () => {
     rerender(<TrainerView prompt={secondPrompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
 
     expect(screen.queryByText(/Selected answer/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Correct|Review/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Correct|Incorrect/i)).not.toBeInTheDocument();
     expect(screen.getByText(/Answer to see the card math/i)).toBeInTheDocument();
   });
 
@@ -215,7 +282,7 @@ describe("TrainerView", () => {
     rerender(<TrainerView prompt={secondPrompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
 
     expect(screen.queryByText(/Selected answer/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Correct|Review/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Correct|Incorrect/i)).not.toBeInTheDocument();
     expect(screen.getByText(/Answer to see the card math/i)).toBeInTheDocument();
   });
 
@@ -264,8 +331,11 @@ describe("TrainerView", () => {
     render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={onAnswered} />);
 
     await user.click(screen.getByRole("button", { name: optionLabel(model.options[0]) }));
-    await user.click(screen.getByRole("button", { name: optionLabel(model.options[1]) }));
-    await user.click(screen.getByRole("button", { name: optionLabel(model.options[2]) }));
+    for (const button of screen.getAllByRole("button")) {
+      if (button.classList.contains("answer-button")) {
+        await user.click(button);
+      }
+    }
 
     expect(onAnswered).toHaveBeenCalledTimes(1);
   });
