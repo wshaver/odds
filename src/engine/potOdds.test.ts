@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { requiredEquity, shouldCall } from "./potOdds";
+import { maxCorrectCall, requiredEquity, shouldCall } from "./potOdds";
 
 describe("shouldCall", () => {
   it("returns true when win probability meets required equity", () => {
@@ -12,5 +12,16 @@ describe("requiredEquity", () => {
   it("rejects non-positive pot and call", () => {
     expect(() => requiredEquity(0, 30)).toThrow("Pot must be positive");
     expect(() => requiredEquity(120, 0)).toThrow("Call must be positive");
+  });
+});
+
+describe("maxCorrectCall", () => {
+  it("returns the largest break-even call amount for a pot and win probability", () => {
+    expect(maxCorrectCall({ pot: 120, winProbability: 0.2 })).toBe(30);
+    expect(maxCorrectCall({ pot: 100, winProbability: 0.5 })).toBe(100);
+  });
+
+  it("rounds down to a whole chip amount", () => {
+    expect(maxCorrectCall({ pot: 100, winProbability: 0.33 })).toBe(49);
   });
 });

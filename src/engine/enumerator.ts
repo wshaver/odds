@@ -17,6 +17,7 @@ export type EnumerationResult = {
   push: number;
   miss: number;
   winProbability: number;
+  winningCards: Card[];
 };
 
 export function enumerateNextCardOutcomes(input: EnumerateNextCardInput): EnumerationResult {
@@ -35,12 +36,16 @@ export function enumerateNextCardOutcomes(input: EnumerateNextCardInput): Enumer
     push: 0,
     miss: 0,
     winProbability: 0,
+    winningCards: [],
   };
 
   for (const nextCard of nextCards) {
     const category = evaluateBestCategory([...knownCards, nextCard]);
     const outcome = compareCategoryToTarget(category, input.target);
     result[outcome] += 1;
+    if (outcome === "win") {
+      result.winningCards.push(nextCard);
+    }
   }
 
   result.winProbability = result.win / result.remaining;

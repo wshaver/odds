@@ -247,8 +247,28 @@ button:disabled {
   border-color: #173024;
   color: #ffffff;
   font-weight: 800;
+  margin-top: 12px;
   min-height: 44px;
   width: 100%;
+}
+
+.secondary-button {
+  background: #ffffff;
+  color: #172019;
+  font-weight: 800;
+  min-height: 40px;
+  width: 100%;
+}
+
+.secondary-button:hover:not(:disabled) {
+  background: #eef3f0;
+}
+
+.winning-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 @media (max-width: 720px) {

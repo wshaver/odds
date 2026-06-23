@@ -2,7 +2,9 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test, vi } from "vitest";
 
+import { cardToString } from "../engine/cards";
 import { enumerateNextCardOutcomes } from "../engine/enumerator";
+import { maxCorrectCall } from "../engine/potOdds";
 import { canonicalPromptKey } from "../prompts/hashRouter";
 import { generatePrompt, getAnswerModel } from "../prompts/questionGenerator";
 import type { Prompt } from "../prompts/types";
@@ -63,6 +65,32 @@ describe("TrainerView", () => {
       selected,
       correct: expectedOddsCorrect(prompt, selected),
     });
+  });
+
+  test("shows winning cards only after answering when requested", async () => {
+    const user = userEvent.setup();
+    const prompt = generatePrompt("odds", "TrainerWinningCards");
+    const model = getAnswerModel(prompt);
+    if (model.kind !== "odds") {
+      throw new Error("Expected odds prompt");
+    }
+    const outcomes = enumerateNextCardOutcomes(prompt);
+
+    render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
+
+    expect(
+      screen.queryByRole("button", { name: /View winning cards/i }),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: optionLabel(model.options[0]) }));
+
+    expect(screen.queryByLabelText(cardToString(outcomes.winningCards[0]))).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /View winning cards/i }));
+
+    for (const card of outcomes.winningCards) {
+      expect(screen.getByLabelText(cardToString(card))).toBeInTheDocument();
+    }
   });
 
   test("restores prior answer feedback and locks answer buttons without recording again", async () => {
@@ -183,6 +211,14 @@ describe("TrainerView", () => {
     expect(screen.getByText(/Selected answer/i)).toHaveTextContent("Call");
     expect(screen.getByText(/Required equity/i)).toHaveTextContent(
       formatPercent(model.requiredEquity),
+    );
+    expect(screen.getByText(/Max correct call/i)).toHaveTextContent(
+      String(
+        maxCorrectCall({
+          pot: prompt.pot,
+          winProbability: enumerateNextCardOutcomes(prompt).winProbability,
+        }),
+      ),
     );
     expect(onAnswered).toHaveBeenCalledTimes(1);
     expect(onAnswered).toHaveBeenCalledWith({

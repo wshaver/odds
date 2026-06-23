@@ -42,6 +42,17 @@ export function generatePrompt(mode: "odds", seed?: string): OddsPrompt;
 export function generatePrompt(mode: "bet", seed?: string): BetPrompt;
 export function generatePrompt(mode: PromptMode, seed?: string): Prompt;
 export function generatePrompt(mode: PromptMode, seed = randomSeed()): Prompt {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const prompt = buildPrompt(mode, seedForAttempt(seed, attempt));
+    if (enumerateNextCardOutcomes(prompt).win > 0) {
+      return prompt;
+    }
+  }
+
+  return buildPrompt(mode, seedForAttempt(seed, 100));
+}
+
+function buildPrompt(mode: PromptMode, seed: string): Prompt {
   const compactSeed = compactAlphanumericSeed(seed);
   const random = createSeededRandom(compactSeed);
   const cards = shuffle(buildDeck(), `${compactSeed}:cards`);
@@ -72,6 +83,16 @@ export function generatePrompt(mode: PromptMode, seed = randomSeed()): Prompt {
     call,
     seed: compactSeed,
   } satisfies BetPrompt;
+}
+
+function seedForAttempt(seed: string, attempt: number): string {
+  if (attempt === 0) {
+    return seed;
+  }
+
+  const suffix = String(attempt);
+  const base = compactAlphanumericSeed(seed).slice(0, 12 - suffix.length);
+  return `${base}${suffix}`;
 }
 
 export function getAnswerModel(prompt: OddsPrompt): OddsAnswerModel;

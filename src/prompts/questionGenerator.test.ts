@@ -57,6 +57,19 @@ describe("questionGenerator", () => {
     }
   });
 
+  test("generated prompts in both modes have at least one winning next card", () => {
+    for (const mode of ["odds", "bet"] as const) {
+      for (let index = 0; index < 200; index += 1) {
+        const prompt = generatePrompt(mode, `ZeroWin${mode}${index}`);
+
+        expect(
+          enumerateNextCardOutcomes(prompt).win,
+          `${mode} seed ${prompt.seed}`,
+        ).toBeGreaterThan(0);
+      }
+    }
+  });
+
   test("creates stable odds answer options from the prompt seed", () => {
     const prompt = generatePrompt("odds", "Stable99");
 

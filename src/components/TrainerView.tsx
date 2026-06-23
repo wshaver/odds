@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { enumerateNextCardOutcomes } from "../engine/enumerator";
-import { requiredEquity } from "../engine/potOdds";
+import { maxCorrectCall, requiredEquity } from "../engine/potOdds";
 import { canonicalPromptKey } from "../prompts/hashRouter";
 import { getAnswerModel } from "../prompts/questionGenerator";
 import type { Prompt } from "../prompts/types";
@@ -39,7 +39,12 @@ export function TrainerView({
   const outcomes = useMemo(() => enumerateNextCardOutcomes(prompt), [prompt]);
   const promptKey = useMemo(() => canonicalPromptKey(prompt), [prompt]);
   const betRequiredEquity = prompt.mode === "bet" ? requiredEquity(prompt.pot, prompt.call) : null;
+  const betMaxCorrectCall =
+    prompt.mode === "bet"
+      ? maxCorrectCall({ pot: prompt.pot, winProbability: outcomes.winProbability })
+      : null;
   const [answer, setAnswer] = useState<AnswerState | null>(null);
+  const [showWinningCards, setShowWinningCards] = useState(false);
   const activeAnswer =
     restoredAnswer !== null
       ? { key: promptKey, ...restoredAnswer }
@@ -49,6 +54,7 @@ export function TrainerView({
 
   useEffect(() => {
     setAnswer(null);
+    setShowWinningCards(false);
   }, [promptKey]);
 
   function answerPrompt(selected: string, correct: boolean): void {
@@ -163,8 +169,28 @@ export function TrainerView({
                   <dd aria-hidden="true">{formatPercent(betRequiredEquity)}</dd>
                 </div>
               ) : null}
+              {betMaxCorrectCall !== null ? (
+                <div>
+                  <dt>Max correct call {formatChipAmount(betMaxCorrectCall)}</dt>
+                  <dd aria-hidden="true">{formatChipAmount(betMaxCorrectCall)}</dd>
+                </div>
+              ) : null}
             </dl>
             <p className="feedback-note">Pushes are neutral and do not count as wins.</p>
+            <button
+              className="secondary-button"
+              onClick={() => setShowWinningCards((current) => !current)}
+              type="button"
+            >
+              {showWinningCards ? "Hide winning cards" : "View winning cards"}
+            </button>
+            {showWinningCards ? (
+              <div className="winning-cards" aria-label="Winning cards">
+                {outcomes.winningCards.map((card) => (
+                  <CardView card={card} key={`${card.rank}${card.suit}`} />
+                ))}
+              </div>
+            ) : null}
             <button className="next-button" onClick={onNext} type="button">
               Next
             </button>
@@ -194,6 +220,10 @@ function formatPercent(value: number): string {
 
 function formatOptionPercent(value: number): string {
   return `${Math.round(value * 100)}%`;
+}
+
+function formatChipAmount(value: number): string {
+  return Number.isFinite(value) ? String(value) : "Any";
 }
 
 function roundProbability(value: number): number {

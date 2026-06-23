@@ -16,6 +16,7 @@ describe("enumerateNextCardOutcomes", () => {
       push: 0,
       miss: 37,
       winProbability: 9 / 46,
+      winningCards: parseCardList("3s4s5s6s8s9sTsJsQs"),
     });
   });
 
