@@ -7,7 +7,8 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "generate:win-chances": "vite-node scripts/generate-common-win-chance-options.ts"
   },
   "dependencies": {
     "react": "^19.0.0",

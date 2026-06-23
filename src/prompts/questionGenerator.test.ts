@@ -4,6 +4,7 @@ import { cardToString } from "../engine/cards";
 import { enumerateNextCardOutcomes } from "../engine/enumerator";
 import { requiredEquity, shouldCall } from "../engine/potOdds";
 import { parsePromptHash, promptToHash } from "./hashRouter";
+import { COMMON_WIN_CHANCE_OPTIONS } from "./commonWinChanceOptions";
 import { generatePrompt, getAnswerModel } from "./questionGenerator";
 
 const USEFUL_TARGETS = new Set([
@@ -95,6 +96,30 @@ describe("questionGenerator", () => {
     expect(answer.options).toHaveLength(3);
     expect(answer.options.every((option) => typeof option === "number")).toBe(true);
     expect(answer.options).toContain(roundedProbability(correctProbability));
+  });
+
+  test("stores all observed common non-zero rounded win chance options", () => {
+    expect(COMMON_WIN_CHANCE_OPTIONS.length).toBeGreaterThan(0);
+    expect(COMMON_WIN_CHANCE_OPTIONS.length).toBeLessThan(100);
+    expect(new Set(COMMON_WIN_CHANCE_OPTIONS).size).toBe(COMMON_WIN_CHANCE_OPTIONS.length);
+    expect(COMMON_WIN_CHANCE_OPTIONS.every((option) => option > 0 && option <= 1)).toBe(true);
+    expect(
+      COMMON_WIN_CHANCE_OPTIONS.every((option) => Number(option.toFixed(2)) === option),
+    ).toBe(true);
+  });
+
+  test("odds answer distractors use stored common win chances", () => {
+    const prompt = generatePrompt("odds", "CommonOptions99");
+    const answer = getAnswerModel(prompt);
+    const correct = roundedProbability(enumerateNextCardOutcomes(prompt).winProbability);
+
+    expect(answer.kind).toBe("odds");
+    expect(answer.options).toContain(correct);
+    expect(
+      answer.options
+        .filter((option) => option !== correct)
+        .every((option) => COMMON_WIN_CHANCE_OPTIONS.includes(option)),
+    ).toBe(true);
   });
 
   test("bet answer model matches shouldCall/requiredEquity", () => {

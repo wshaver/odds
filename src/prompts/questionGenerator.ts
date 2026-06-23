@@ -2,6 +2,7 @@ import { buildDeck, type Card } from "../engine/cards";
 import { enumerateNextCardOutcomes } from "../engine/enumerator";
 import type { HandCategory } from "../engine/handEvaluator";
 import { requiredEquity, shouldCall } from "../engine/potOdds";
+import { COMMON_WIN_CHANCE_OPTIONS } from "./commonWinChanceOptions";
 import { createSeededRandom, shuffle } from "./seededRandom";
 import type { BetPrompt, OddsPrompt, Prompt, PromptMode } from "./types";
 
@@ -137,17 +138,17 @@ function oddsOptions(correctProbability: number, seed: string): number[] {
   const correct = roundProbability(correctProbability);
   const random = createSeededRandom(`${seed}:odds-options`);
   const options = new Set<number>([correct]);
-  const deltas = shuffle([0.1, -0.1, 0.2, -0.2, 0.3, -0.3, 0.15, -0.15], seed);
+  const commonOptions = shuffle([...COMMON_WIN_CHANCE_OPTIONS], seed);
 
-  for (const delta of deltas) {
+  for (const option of commonOptions) {
     if (options.size === 3) {
       break;
     }
-    options.add(clampProbability(roundProbability(correct + delta)));
+    options.add(option);
   }
 
   while (options.size < 3) {
-    options.add(roundProbability(random()));
+    options.add(clampProbability(roundProbability(random())));
   }
 
   return shuffle([...options], `${seed}:odds-options-order`);
