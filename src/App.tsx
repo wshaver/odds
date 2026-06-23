@@ -1,8 +1,104 @@
+import { useEffect, useState } from "react";
+
+import { TrainerView, type TrainerAnswer } from "./components/TrainerView";
+import { parsePromptHash, promptToHash } from "./prompts/hashRouter";
+import { generatePrompt } from "./prompts/questionGenerator";
+import type { Prompt, PromptMode } from "./prompts/types";
+import { loadProfile, recordAnswer, type PlayerProfile } from "./profile/profileStore";
+
+function initialPrompt(): Prompt {
+  try {
+    if (window.location.hash !== "") {
+      return parsePromptHash(window.location.hash);
+    }
+  } catch {
+    // Invalid shared links fall back to a fresh odds prompt below.
+  }
+
+  const prompt = generatePrompt("odds");
+  window.history.replaceState(null, "", promptToHash(prompt));
+  return prompt;
+}
+
 export function App() {
+  const [prompt, setPrompt] = useState<Prompt>(() => initialPrompt());
+  const [profile, setProfile] = useState<PlayerProfile>(() => loadProfile());
+
+  useEffect(() => {
+    function handleHashChange(): void {
+      try {
+        setPrompt(parsePromptHash(window.location.hash));
+      } catch {
+        const fallback = generatePrompt("odds");
+        window.history.replaceState(null, "", promptToHash(fallback));
+        setPrompt(fallback);
+      }
+    }
+
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  function showPrompt(nextPrompt: Prompt): void {
+    setPrompt(nextPrompt);
+    const nextHash = promptToHash(nextPrompt);
+    if (window.location.hash !== nextHash) {
+      window.location.hash = nextHash;
+    }
+  }
+
+  function switchMode(mode: PromptMode): void {
+    showPrompt(generatePrompt(mode));
+  }
+
+  function handleAnswered(answer: TrainerAnswer): void {
+    const result = recordAnswer({
+      key: answer.key,
+      mode: prompt.mode,
+      selected: answer.selected,
+      correct: answer.correct,
+    });
+    setProfile(result.profile);
+  }
+
+  function handleNext(): void {
+    showPrompt(generatePrompt(prompt.mode));
+  }
+
   return (
     <main className="app-shell">
-      <h1>Odds</h1>
-      <p>Never tell me the odds. But do help me memorize them.</p>
+      <header className="top-bar">
+        <div>
+          <h1>Odds</h1>
+          <div className="stats-line" aria-label="Session stats">
+            <span>
+              Odds {profile.modes.tellMeTheOdds.correct}/
+              {profile.modes.tellMeTheOdds.answered}
+            </span>
+            <span>
+              Bet {profile.modes.whatsTheBet.correct}/
+              {profile.modes.whatsTheBet.answered}
+            </span>
+          </div>
+        </div>
+        <div className="mode-buttons" aria-label="Mode">
+          <button
+            aria-pressed={prompt.mode === "odds"}
+            onClick={() => switchMode("odds")}
+            type="button"
+          >
+            Odds
+          </button>
+          <button
+            aria-pressed={prompt.mode === "bet"}
+            onClick={() => switchMode("bet")}
+            type="button"
+          >
+            Bet
+          </button>
+        </div>
+      </header>
+      <TrainerView prompt={prompt} onAnswered={handleAnswered} onNext={handleNext} />
     </main>
   );
 }
