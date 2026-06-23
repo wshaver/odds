@@ -3,21 +3,11 @@ import { resolve } from "node:path";
 
 import { buildDeck } from "../src/engine/cards";
 import { enumerateNextCardOutcomes } from "../src/engine/enumerator";
-import type { HandCategory } from "../src/engine/handEvaluator";
 import { createSeededRandom, shuffle } from "../src/prompts/seededRandom";
 import type { OddsPrompt } from "../src/prompts/types";
 
 const SAMPLE_COUNT = 100_000;
 const OUTPUT_PATH = resolve("src/prompts/commonWinChanceOptions.ts");
-
-const USEFUL_TARGETS: HandCategory[] = [
-  "pair",
-  "two-pair",
-  "trips",
-  "straight",
-  "flush",
-  "full-house",
-];
 
 const counts = new Map<number, number>();
 
@@ -62,8 +52,8 @@ function buildSimulationPrompt(seed: string): OddsPrompt {
   return {
     mode: "odds",
     hero: cards.slice(0, 2),
-    board: cards.slice(2, 2 + boardLength),
-    target: USEFUL_TARGETS[Math.floor(random() * USEFUL_TARGETS.length)],
+    opponent: cards.slice(2, 4),
+    board: cards.slice(4, 4 + boardLength),
     seed,
   };
 }

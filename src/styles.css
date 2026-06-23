@@ -98,7 +98,6 @@ button:disabled {
 }
 
 .card-row-wrap + .card-row-wrap,
-.target-line,
 .bet-line {
   margin-top: 16px;
 }
@@ -148,10 +147,6 @@ button:disabled {
 
 .card-suit {
   font-size: 1.2rem;
-}
-
-.target-line strong {
-  font-size: 1.25rem;
 }
 
 .answer-panel h2 {
