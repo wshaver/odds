@@ -43,6 +43,7 @@ export function TrainerView({
     prompt.mode === "bet"
       ? maxCorrectCall({ pot: prompt.pot, winProbability: outcomes.winProbability })
       : null;
+  const hasWinningCards = outcomes.winningCards.length > 0;
   const [answer, setAnswer] = useState<AnswerState | null>(null);
   const [showWinningCards, setShowWinningCards] = useState(false);
   const activeAnswer =
@@ -177,19 +178,23 @@ export function TrainerView({
               ) : null}
             </dl>
             <p className="feedback-note">Pushes are neutral and do not count as wins.</p>
-            <button
-              className="secondary-button"
-              onClick={() => setShowWinningCards((current) => !current)}
-              type="button"
-            >
-              {showWinningCards ? "Hide winning cards" : "View winning cards"}
-            </button>
-            {showWinningCards ? (
-              <div className="winning-cards" aria-label="Winning cards">
-                {outcomes.winningCards.map((card) => (
-                  <CardView card={card} key={`${card.rank}${card.suit}`} />
-                ))}
-              </div>
+            {hasWinningCards ? (
+              <>
+                <button
+                  className="secondary-button"
+                  onClick={() => setShowWinningCards((current) => !current)}
+                  type="button"
+                >
+                  {showWinningCards ? "Hide winning cards" : "View winning cards"}
+                </button>
+                {showWinningCards ? (
+                  <div className="winning-cards" aria-label="Winning cards">
+                    {outcomes.winningCards.map((card) => (
+                      <CardView card={card} key={`${card.rank}${card.suit}`} />
+                    ))}
+                  </div>
+                ) : null}
+              </>
             ) : null}
             <button className="next-button" onClick={onNext} type="button">
               Next

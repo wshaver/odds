@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test, vi } from "vitest";
 
-import { cardToString } from "../engine/cards";
+import { cardToString, parseCardList } from "../engine/cards";
 import { enumerateNextCardOutcomes } from "../engine/enumerator";
 import { maxCorrectCall } from "../engine/potOdds";
 import { canonicalPromptKey } from "../prompts/hashRouter";
@@ -91,6 +91,30 @@ describe("TrainerView", () => {
     for (const card of outcomes.winningCards) {
       expect(screen.getByLabelText(cardToString(card))).toBeInTheDocument();
     }
+  });
+
+  test("hides winning cards button when there are no winning cards", async () => {
+    const user = userEvent.setup();
+    const prompt: Prompt = {
+      mode: "odds",
+      hero: parseCardList("9c7d"),
+      board: parseCardList("2c2h3s2s"),
+      target: "full-house",
+      seed: "TrainerNoWinningCards",
+    };
+    const model = getAnswerModel(prompt);
+    if (model.kind !== "odds") {
+      throw new Error("Expected odds prompt");
+    }
+
+    render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: optionLabel(model.options[0]) }));
+
+    expect(screen.getByText(/Win outs/i)).toHaveTextContent("0");
+    expect(
+      screen.queryByRole("button", { name: /View winning cards/i }),
+    ).not.toBeInTheDocument();
   });
 
   test("restores prior answer feedback and locks answer buttons without recording again", async () => {
