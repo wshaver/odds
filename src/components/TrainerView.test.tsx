@@ -62,6 +62,31 @@ describe("TrainerView", () => {
     });
   });
 
+  test("does not show stale odds answer feedback after prompt changes", async () => {
+    const user = userEvent.setup();
+    const firstPrompt = generatePrompt("odds", "TrainerA");
+    const secondPrompt = generatePrompt("odds", "TrainerB");
+    const firstModel = getAnswerModel(firstPrompt);
+    if (firstModel.kind !== "odds") {
+      throw new Error("Expected odds prompt");
+    }
+    const selected = optionLabel(firstModel.options[0]);
+
+    const { rerender } = render(
+      <TrainerView prompt={firstPrompt} onNext={vi.fn()} onAnswered={vi.fn()} />,
+    );
+
+    await user.click(screen.getByRole("button", { name: selected }));
+
+    expect(screen.getByText(/Selected answer/i)).toHaveTextContent(selected);
+
+    rerender(<TrainerView prompt={secondPrompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
+
+    expect(screen.queryByText(/Selected answer/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Correct|Review/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Answer to see the card math/i)).toBeInTheDocument();
+  });
+
   test("answers a bet prompt with Call/Fold and shows required equity", async () => {
     const user = userEvent.setup();
     const prompt = generatePrompt("bet", "TrainerBet1");

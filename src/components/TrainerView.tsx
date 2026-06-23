@@ -20,6 +20,7 @@ export type TrainerViewProps = {
 };
 
 type AnswerState = {
+  key: string;
   selected: string;
   correct: boolean;
 };
@@ -33,17 +34,18 @@ export function TrainerView({ prompt, onNext, onAnswered }: TrainerViewProps) {
   const promptKey = useMemo(() => canonicalPromptKey(prompt), [prompt]);
   const betRequiredEquity = prompt.mode === "bet" ? requiredEquity(prompt.pot, prompt.call) : null;
   const [answer, setAnswer] = useState<AnswerState | null>(null);
+  const activeAnswer = answer?.key === promptKey ? answer : null;
 
   useEffect(() => {
     setAnswer(null);
   }, [promptKey]);
 
   function answerPrompt(selected: string, correct: boolean): void {
-    if (answer !== null) {
+    if (activeAnswer !== null) {
       return;
     }
 
-    setAnswer({ selected, correct });
+    setAnswer({ key: promptKey, selected, correct });
     onAnswered({ key: promptKey, selected, correct });
   }
 
@@ -79,7 +81,7 @@ export function TrainerView({ prompt, onNext, onAnswered }: TrainerViewProps) {
                   return (
                     <button
                       className="answer-button"
-                      disabled={answer !== null}
+                      disabled={activeAnswer !== null}
                       key={selected}
                       onClick={() => answerPrompt(selected, correct)}
                       type="button"
@@ -94,7 +96,7 @@ export function TrainerView({ prompt, onNext, onAnswered }: TrainerViewProps) {
                   return (
                     <button
                       className="answer-button"
-                      disabled={answer !== null}
+                      disabled={activeAnswer !== null}
                       key={action}
                       onClick={() =>
                         answerPrompt(selected, action === answerModel.correctAction)
@@ -110,17 +112,17 @@ export function TrainerView({ prompt, onNext, onAnswered }: TrainerViewProps) {
       </div>
 
       <aside className="feedback-panel" aria-live="polite">
-        {answer === null ? (
+        {activeAnswer === null ? (
           <p className="feedback-placeholder">Answer to see the card math.</p>
         ) : (
           <>
-            <div className={answer.correct ? "result-correct" : "result-miss"}>
-              {answer.correct ? "Correct" : "Review"}
+            <div className={activeAnswer.correct ? "result-correct" : "result-miss"}>
+              {activeAnswer.correct ? "Correct" : "Review"}
             </div>
             <dl className="feedback-list">
               <div>
-                <dt>Selected answer {answer.selected}</dt>
-                <dd aria-hidden="true">{answer.selected}</dd>
+                <dt>Selected answer {activeAnswer.selected}</dt>
+                <dd aria-hidden="true">{activeAnswer.selected}</dd>
               </div>
               <div>
                 <dt>Win outs {outcomes.win}</dt>
