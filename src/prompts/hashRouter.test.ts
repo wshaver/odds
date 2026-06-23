@@ -56,4 +56,35 @@ describe("hashRouter", () => {
       "mode=bet&hero=6s7s&board=8s9dKh2s&target=trips&pot=120&call=30&seed=k4p9",
     );
   });
+
+  test("encodes special characters in seed and parses them back", () => {
+    const prompt = parsePromptHash(
+      "#/odds?hero=6s7s&board=8s9dKh&target=two-pair&seed=k4p9",
+    );
+
+    const hash = promptToHash({ ...prompt, seed: "a&pot=999#x y" });
+
+    expect(hash).toBe(
+      "#/odds?hero=6s7s&board=8s9dKh&target=two-pair&seed=a%26pot%3D999%23x%20y",
+    );
+    expect(parsePromptHash(hash).seed).toBe("a&pot=999#x y");
+  });
+
+  test("canonical prompt keys encode special-character seeds without ambiguity", () => {
+    const prompt = parsePromptHash(
+      "#/bet?hero=6s7s&board=8s9dKh2s&target=trips&pot=120&call=30&seed=k4p9",
+    );
+
+    expect(canonicalPromptKey({ ...prompt, seed: "a&pot=999#x y" })).toBe(
+      "mode=bet&hero=6s7s&board=8s9dKh2s&target=trips&pot=120&call=30&seed=a%26pot%3D999%23x%20y",
+    );
+  });
+
+  test("rejects duplicate known prompt parameters", () => {
+    expect(() =>
+      parsePromptHash(
+        "#/odds?hero=6s7s&hero=AsAd&board=8s9dKh&target=two-pair&seed=k4p9",
+      ),
+    ).toThrow(/Duplicate parameter: hero/);
+  });
 });

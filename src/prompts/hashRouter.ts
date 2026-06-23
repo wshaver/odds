@@ -10,6 +10,7 @@ export function parsePromptHash(hash: string): Prompt {
 
   const mode = parseMode(match[1]);
   const params = new URLSearchParams(match[2]);
+  validateNoDuplicateParams(params, knownParamsForMode(mode));
   const hero = parseCards(requireParam(params, "hero"), "hero");
   const board = parseCards(requireParam(params, "board"), "board");
   const target = parseTarget(requireParam(params, "target"));
@@ -36,18 +37,44 @@ export function parsePromptHash(hash: string): Prompt {
 
 export function promptToHash(prompt: Prompt): string {
   if (prompt.mode === "odds") {
-    return `#/odds?hero=${cardsToString(prompt.hero)}&board=${cardsToString(prompt.board)}&target=${prompt.target}&seed=${prompt.seed}`;
+    return `#/odds?${serializeParams([
+      ["hero", cardsToString(prompt.hero)],
+      ["board", cardsToString(prompt.board)],
+      ["target", prompt.target],
+      ["seed", prompt.seed],
+    ])}`;
   }
 
-  return `#/bet?hero=${cardsToString(prompt.hero)}&board=${cardsToString(prompt.board)}&target=${prompt.target}&pot=${prompt.pot}&call=${prompt.call}&seed=${prompt.seed}`;
+  return `#/bet?${serializeParams([
+    ["hero", cardsToString(prompt.hero)],
+    ["board", cardsToString(prompt.board)],
+    ["target", prompt.target],
+    ["pot", String(prompt.pot)],
+    ["call", String(prompt.call)],
+    ["seed", prompt.seed],
+  ])}`;
 }
 
 export function canonicalPromptKey(prompt: Prompt): string {
   if (prompt.mode === "odds") {
-    return `mode=odds&hero=${cardsToString(prompt.hero)}&board=${cardsToString(prompt.board)}&target=${prompt.target}&seed=${prompt.seed}`;
+    return serializeParams([
+      ["mode", "odds"],
+      ["hero", cardsToString(prompt.hero)],
+      ["board", cardsToString(prompt.board)],
+      ["target", prompt.target],
+      ["seed", prompt.seed],
+    ]);
   }
 
-  return `mode=bet&hero=${cardsToString(prompt.hero)}&board=${cardsToString(prompt.board)}&target=${prompt.target}&pot=${prompt.pot}&call=${prompt.call}&seed=${prompt.seed}`;
+  return serializeParams([
+    ["mode", "bet"],
+    ["hero", cardsToString(prompt.hero)],
+    ["board", cardsToString(prompt.board)],
+    ["target", prompt.target],
+    ["pot", String(prompt.pot)],
+    ["call", String(prompt.call)],
+    ["seed", prompt.seed],
+  ]);
 }
 
 function parseMode(value: string): PromptMode {
@@ -64,6 +91,22 @@ function requireParam(params: URLSearchParams, key: string): string {
     throw new Error(`Missing ${key}`);
   }
   return value;
+}
+
+function knownParamsForMode(mode: PromptMode): string[] {
+  if (mode === "odds") {
+    return ["hero", "board", "target", "seed"];
+  }
+
+  return ["hero", "board", "target", "pot", "call", "seed"];
+}
+
+function validateNoDuplicateParams(params: URLSearchParams, knownParams: string[]): void {
+  for (const key of knownParams) {
+    if (params.getAll(key).length > 1) {
+      throw new Error(`Duplicate parameter: ${key}`);
+    }
+  }
 }
 
 function parseCards(value: string, key: string): Card[] {
@@ -120,4 +163,10 @@ function parsePositiveNumber(value: string, label: "Pot" | "Call"): number {
 
 function cardsToString(cards: Card[]): string {
   return cards.map(cardToString).join("");
+}
+
+function serializeParams(entries: [string, string][]): string {
+  return entries
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+    .join("&");
 }
