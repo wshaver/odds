@@ -1,0 +1,48 @@
+import { buildDeck, removeKnownCards, type Card } from "./cards";
+import {
+  compareCategoryToTarget,
+  evaluateBestCategory,
+  type HandCategory,
+} from "./handEvaluator";
+
+export type EnumerateNextCardInput = {
+  hero: Card[];
+  board: Card[];
+  target: HandCategory;
+};
+
+export type EnumerationResult = {
+  remaining: number;
+  win: number;
+  push: number;
+  miss: number;
+  winProbability: number;
+};
+
+export function enumerateNextCardOutcomes(input: EnumerateNextCardInput): EnumerationResult {
+  if (input.hero.length !== 2) {
+    throw new Error("Hero must have exactly 2 cards");
+  }
+  if (input.board.length !== 3 && input.board.length !== 4) {
+    throw new Error("Board must have 3 or 4 cards");
+  }
+
+  const knownCards = [...input.hero, ...input.board];
+  const nextCards = removeKnownCards(buildDeck(), knownCards);
+  const result: EnumerationResult = {
+    remaining: nextCards.length,
+    win: 0,
+    push: 0,
+    miss: 0,
+    winProbability: 0,
+  };
+
+  for (const nextCard of nextCards) {
+    const category = evaluateBestCategory([...knownCards, nextCard]);
+    const outcome = compareCategoryToTarget(category, input.target);
+    result[outcome] += 1;
+  }
+
+  result.winProbability = result.win / result.remaining;
+  return result;
+}
