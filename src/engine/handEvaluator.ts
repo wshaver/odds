@@ -14,6 +14,16 @@ export const HAND_CATEGORIES = [
 
 export type HandCategory = (typeof HAND_CATEGORIES)[number];
 export type OutcomeBucket = "win" | "push" | "miss";
+export type HandScore = {
+  category: HandCategory;
+  ranks: number[];
+};
+
+type RankGroup = {
+  rank: Rank;
+  value: number;
+  count: number;
+};
 
 const RANK_VALUES: Record<Rank, number> = {
   "2": 2,
@@ -32,39 +42,7 @@ const RANK_VALUES: Record<Rank, number> = {
 };
 
 export function evaluateBestCategory(cards: Card[]): HandCategory {
-  if (cards.length < 5 || cards.length > 7) {
-    throw new Error("Hand evaluation requires 5 to 7 cards");
-  }
-
-  const rankCounts = countBy(cards.map((card) => card.rank));
-  const counts = [...rankCounts.values()].sort((a, b) => b - a);
-
-  if (hasStraightFlush(cards)) {
-    return "straight-flush";
-  }
-  if (counts[0] === 4) {
-    return "four-kind";
-  }
-  if (hasFullHouse(counts)) {
-    return "full-house";
-  }
-  if (hasFlush(cards)) {
-    return "flush";
-  }
-  if (hasStraight(cards.map((card) => card.rank))) {
-    return "straight";
-  }
-  if (counts[0] === 3) {
-    return "trips";
-  }
-  if (counts.filter((count) => count >= 2).length >= 2) {
-    return "two-pair";
-  }
-  if (counts[0] === 2) {
-    return "pair";
-  }
-
-  return "high-card";
+  return evaluateBestHand(cards).category;
 }
 
 export function compareCategoryToTarget(
@@ -84,6 +62,47 @@ export function compareCategoryToTarget(
 
 export function compareCategories(left: HandCategory, right: HandCategory): number {
   return HAND_CATEGORIES.indexOf(left) - HAND_CATEGORIES.indexOf(right);
+}
+
+export function compareBestHands(left: Card[], right: Card[]): number {
+  return compareHandScores(evaluateBestHand(left), evaluateBestHand(right));
+}
+
+export function evaluateBestHand(cards: Card[]): HandScore {
+  if (cards.length < 5 || cards.length > 7) {
+    throw new Error("Hand evaluation requires 5 to 7 cards");
+  }
+
+  let best: HandScore | null = null;
+  for (const hand of fiveCardCombinations(cards)) {
+    const score = evaluateFiveCardHand(hand);
+    if (best === null || compareHandScores(score, best) > 0) {
+      best = score;
+    }
+  }
+
+  if (best === null) {
+    throw new Error("Hand evaluation requires 5 to 7 cards");
+  }
+
+  return best;
+}
+
+export function compareHandScores(left: HandScore, right: HandScore): number {
+  const categoryComparison = compareCategories(left.category, right.category);
+  if (categoryComparison !== 0) {
+    return categoryComparison;
+  }
+
+  const length = Math.max(left.ranks.length, right.ranks.length);
+  for (let index = 0; index < length; index += 1) {
+    const difference = (left.ranks[index] ?? 0) - (right.ranks[index] ?? 0);
+    if (difference !== 0) {
+      return difference;
+    }
+  }
+
+  return 0;
 }
 
 function countBy<T>(values: T[]): Map<T, number> {
@@ -117,6 +136,91 @@ function hasStraightFlush(cards: Card[]): boolean {
 }
 
 function hasStraight(ranks: Rank[]): boolean {
+  return straightHighValue(ranks) !== null;
+}
+
+function evaluateFiveCardHand(cards: Card[]): HandScore {
+  const flush = hasFlush(cards);
+  const straightHigh = straightHighValue(cards.map((card) => card.rank));
+  const groups = rankGroups(cards);
+
+  if (flush && straightHigh !== null) {
+    return { category: "straight-flush", ranks: [straightHigh] };
+  }
+
+  const four = groups.find((group) => group.count === 4);
+  if (four !== undefined) {
+    return {
+      category: "four-kind",
+      ranks: [four.value, ...groups.filter((group) => group.count !== 4).map((group) => group.value)],
+    };
+  }
+
+  const counts = groups.map((group) => group.count).sort((a, b) => b - a);
+  if (hasFullHouse(counts)) {
+    const trips = groups.filter((group) => group.count >= 3);
+    const pairs = groups.filter((group) => group.count >= 2 && group.value !== trips[0].value);
+    return { category: "full-house", ranks: [trips[0].value, pairs[0].value] };
+  }
+
+  if (flush) {
+    return { category: "flush", ranks: groups.map((group) => group.value) };
+  }
+
+  if (straightHigh !== null) {
+    return { category: "straight", ranks: [straightHigh] };
+  }
+
+  const trips = groups.find((group) => group.count === 3);
+  if (trips !== undefined) {
+    return {
+      category: "trips",
+      ranks: [trips.value, ...groups.filter((group) => group.count !== 3).map((group) => group.value)],
+    };
+  }
+
+  const pairs = groups.filter((group) => group.count === 2);
+  if (pairs.length >= 2) {
+    return {
+      category: "two-pair",
+      ranks: [pairs[0].value, pairs[1].value, groups.filter((group) => group.count === 1)[0].value],
+    };
+  }
+
+  if (pairs.length === 1) {
+    return {
+      category: "pair",
+      ranks: [pairs[0].value, ...groups.filter((group) => group.count === 1).map((group) => group.value)],
+    };
+  }
+
+  return { category: "high-card", ranks: groups.map((group) => group.value) };
+}
+
+function fiveCardCombinations(cards: Card[]): Card[][] {
+  const combinations: Card[][] = [];
+  for (let first = 0; first < cards.length - 4; first += 1) {
+    for (let second = first + 1; second < cards.length - 3; second += 1) {
+      for (let third = second + 1; third < cards.length - 2; third += 1) {
+        for (let fourth = third + 1; fourth < cards.length - 1; fourth += 1) {
+          for (let fifth = fourth + 1; fifth < cards.length; fifth += 1) {
+            combinations.push([cards[first], cards[second], cards[third], cards[fourth], cards[fifth]]);
+          }
+        }
+      }
+    }
+  }
+  return combinations;
+}
+
+function rankGroups(cards: Card[]): RankGroup[] {
+  const counts = countBy(cards.map((card) => card.rank));
+  return [...counts.entries()]
+    .map(([rank, count]) => ({ rank, value: RANK_VALUES[rank], count }))
+    .sort((left, right) => right.count - left.count || right.value - left.value);
+}
+
+function straightHighValue(ranks: Rank[]): number | null {
   const values = new Set<number>();
   for (const rank of ranks) {
     const value = RANK_VALUES[rank];
@@ -128,16 +232,17 @@ function hasStraight(ranks: Rank[]): boolean {
 
   const sortedValues = [...values].sort((a, b) => a - b);
   let runLength = 1;
-  for (let i = 1; i < sortedValues.length; i += 1) {
-    if (sortedValues[i] === sortedValues[i - 1] + 1) {
+  let best: number | null = null;
+  for (let index = 1; index < sortedValues.length; index += 1) {
+    if (sortedValues[index] === sortedValues[index - 1] + 1) {
       runLength += 1;
       if (runLength >= 5) {
-        return true;
+        best = sortedValues[index];
       }
     } else {
       runLength = 1;
     }
   }
 
-  return false;
+  return best;
 }
