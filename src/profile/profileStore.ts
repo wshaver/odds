@@ -28,7 +28,13 @@ export type PlayerProfile = {
 };
 
 export function loadProfile(): PlayerProfile {
-  const stored = localStorage.getItem(STORAGE_KEY);
+  let stored: string | null;
+
+  try {
+    stored = localStorage.getItem(STORAGE_KEY);
+  } catch {
+    return createDefaultProfile();
+  }
 
   if (stored === null) {
     return createDefaultProfile();
@@ -41,14 +47,18 @@ export function loadProfile(): PlayerProfile {
       return createDefaultProfile();
     }
 
-    return parsed as PlayerProfile;
+    return normalizeProfile(parsed);
   } catch {
     return createDefaultProfile();
   }
 }
 
 export function saveProfile(profile: PlayerProfile): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+  } catch {
+    // Storage may be unavailable or full. Keep the in-memory profile usable.
+  }
 }
 
 export function recordAnswer(input: {
@@ -110,6 +120,44 @@ function createDefaultModeStats(): ModeStats {
     currentStreak: 0,
     bestStreak: 0,
   };
+}
+
+function normalizeProfile(profile: Partial<PlayerProfile>): PlayerProfile {
+  const defaults = createDefaultProfile();
+
+  return {
+    version: 1,
+    modes: {
+      tellMeTheOdds: isModeStats(profile.modes?.tellMeTheOdds)
+        ? profile.modes.tellMeTheOdds
+        : defaults.modes.tellMeTheOdds,
+      whatsTheBet: isModeStats(profile.modes?.whatsTheBet)
+        ? profile.modes.whatsTheBet
+        : defaults.modes.whatsTheBet,
+    },
+    weakSpots: isRecord(profile.weakSpots) ? profile.weakSpots : defaults.weakSpots,
+    answeredPrompts: isRecord(profile.answeredPrompts)
+      ? profile.answeredPrompts
+      : defaults.answeredPrompts,
+    settings: isRecord(profile.settings) ? profile.settings : defaults.settings,
+  };
+}
+
+function isModeStats(value: unknown): value is ModeStats {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    Number.isFinite(value.answered) &&
+    Number.isFinite(value.correct) &&
+    Number.isFinite(value.currentStreak) &&
+    Number.isFinite(value.bestStreak)
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, never> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function modeStatsKey(mode: PromptMode): keyof PlayerProfile["modes"] {

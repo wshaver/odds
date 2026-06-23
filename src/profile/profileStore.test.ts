@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 
 import {
   loadProfile,
@@ -9,6 +9,7 @@ import {
 
 describe("profileStore", () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     localStorage.clear();
   });
 
@@ -113,6 +114,64 @@ describe("profileStore", () => {
       JSON.stringify({ version: 2, answeredPrompts: { old: {} } }),
     );
     expectDefaultProfile(loadProfile());
+  });
+
+  test("malformed version-1 localStorage data returns default profile and recordAnswer still works", () => {
+    localStorage.setItem("odds.playerProfile.v1", JSON.stringify({ version: 1 }));
+
+    expectDefaultProfile(loadProfile());
+
+    const result = recordAnswer({
+      key: "mode=odds&hero=AsAd&board=8s9dKh&target=pair&seed=malformed",
+      mode: "odds",
+      selected: "90%",
+      correct: true,
+    });
+
+    expect(result.scored).toBe(true);
+    expect(result.profile.modes.tellMeTheOdds).toEqual({
+      answered: 1,
+      correct: 1,
+      currentStreak: 1,
+      bestStreak: 1,
+    });
+  });
+
+  test("loadProfile returns default profile when localStorage.getItem throws", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("storage unavailable");
+    });
+
+    expectDefaultProfile(loadProfile());
+  });
+
+  test("recordAnswer returns updated profile and scored true when localStorage.setItem throws", () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("storage full");
+    });
+
+    const result = recordAnswer({
+      key: "mode=bet&hero=6s7s&board=8s9dKh2s&target=trips&pot=120&call=30&seed=setItem",
+      mode: "bet",
+      selected: "call",
+      correct: true,
+    });
+
+    expect(result.scored).toBe(true);
+    expect(result.profile.modes.whatsTheBet).toEqual({
+      answered: 1,
+      correct: 1,
+      currentStreak: 1,
+      bestStreak: 1,
+    });
+  });
+
+  test("resetProfile does not throw when localStorage.setItem throws", () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("storage full");
+    });
+
+    expect(() => resetProfile()).not.toThrow();
   });
 });
 
