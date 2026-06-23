@@ -71,16 +71,19 @@ export function compareCategoryToTarget(
   category: HandCategory,
   target: HandCategory,
 ): OutcomeBucket {
-  const categoryStrength = HAND_CATEGORIES.indexOf(category);
-  const targetStrength = HAND_CATEGORIES.indexOf(target);
+  const comparison = compareCategories(category, target);
 
-  if (categoryStrength > targetStrength) {
+  if (comparison > 0) {
     return "win";
   }
-  if (categoryStrength === targetStrength) {
+  if (comparison === 0) {
     return "push";
   }
   return "miss";
+}
+
+export function compareCategories(left: HandCategory, right: HandCategory): number {
+  return HAND_CATEGORIES.indexOf(left) - HAND_CATEGORIES.indexOf(right);
 }
 
 function countBy<T>(values: T[]): Map<T, number> {

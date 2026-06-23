@@ -31,6 +31,18 @@ describe("enumerateNextCardOutcomes", () => {
     expect(result.win).toBe(0);
   });
 
+  it("counts board-made quads as a push against a full house target", () => {
+    const result = enumerateNextCardOutcomes({
+      hero: parseCardList("9c7d"),
+      board: parseCardList("2c2h3s2s"),
+      target: "full-house",
+    });
+
+    expect(result.winningCards).not.toContainEqual(parseCardList("2d")[0]);
+    expect(result.win).toBe(0);
+    expect(result.push).toBe(10);
+  });
+
   it("does not remove imagined opponent cards", () => {
     const result = enumerateNextCardOutcomes({
       hero: parseCardList("6s7s"),

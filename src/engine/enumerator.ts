@@ -1,5 +1,6 @@
 import { buildDeck, removeKnownCards, type Card } from "./cards";
 import {
+  compareCategories,
   compareCategoryToTarget,
   evaluateBestCategory,
   type HandCategory,
@@ -41,7 +42,9 @@ export function enumerateNextCardOutcomes(input: EnumerateNextCardInput): Enumer
 
   for (const nextCard of nextCards) {
     const category = evaluateBestCategory([...knownCards, nextCard]);
-    const outcome = compareCategoryToTarget(category, input.target);
+    const boardCategory =
+      input.board.length === 4 ? evaluateBestCategory([...input.board, nextCard]) : null;
+    const outcome = classifyOutcome(category, boardCategory, input.target);
     result[outcome] += 1;
     if (outcome === "win") {
       result.winningCards.push(nextCard);
@@ -50,4 +53,23 @@ export function enumerateNextCardOutcomes(input: EnumerateNextCardInput): Enumer
 
   result.winProbability = result.win / result.remaining;
   return result;
+}
+
+function classifyOutcome(
+  heroCategory: HandCategory,
+  boardCategory: HandCategory | null,
+  target: HandCategory,
+): "win" | "push" | "miss" {
+  const heroOutcome = compareCategoryToTarget(heroCategory, target);
+
+  if (
+    heroOutcome === "win" &&
+    boardCategory !== null &&
+    compareCategoryToTarget(boardCategory, target) === "win" &&
+    compareCategories(heroCategory, boardCategory) <= 0
+  ) {
+    return "push";
+  }
+
+  return heroOutcome;
 }
