@@ -17,6 +17,7 @@ export type TrainerViewProps = {
   prompt: Prompt;
   onNext: () => void;
   onAnswered: (answer: TrainerAnswer) => void;
+  restoredAnswer?: Omit<TrainerAnswer, "key"> | null;
 };
 
 type AnswerState = {
@@ -25,7 +26,12 @@ type AnswerState = {
   correct: boolean;
 };
 
-export function TrainerView({ prompt, onNext, onAnswered }: TrainerViewProps) {
+export function TrainerView({
+  prompt,
+  onNext,
+  onAnswered,
+  restoredAnswer = null,
+}: TrainerViewProps) {
   const answerModel = useMemo(
     () => (prompt.mode === "odds" ? getAnswerModel(prompt) : getAnswerModel(prompt)),
     [prompt],
@@ -34,7 +40,12 @@ export function TrainerView({ prompt, onNext, onAnswered }: TrainerViewProps) {
   const promptKey = useMemo(() => canonicalPromptKey(prompt), [prompt]);
   const betRequiredEquity = prompt.mode === "bet" ? requiredEquity(prompt.pot, prompt.call) : null;
   const [answer, setAnswer] = useState<AnswerState | null>(null);
-  const activeAnswer = answer?.key === promptKey ? answer : null;
+  const activeAnswer =
+    restoredAnswer !== null
+      ? { key: promptKey, ...restoredAnswer }
+      : answer?.key === promptKey
+        ? answer
+        : null;
 
   useEffect(() => {
     setAnswer(null);
@@ -74,9 +85,10 @@ export function TrainerView({ prompt, onNext, onAnswered }: TrainerViewProps) {
           <div className="answer-grid">
             {answerModel.kind === "odds"
               ? answerModel.options.map((option) => {
-                  const selected = formatPercent(option);
+                  const selected = formatOptionPercent(option);
                   const correct =
-                    selected === formatPercent(roundProbability(answerModel.correctProbability));
+                    selected ===
+                    formatOptionPercent(roundProbability(answerModel.correctProbability));
 
                   return (
                     <button
@@ -137,8 +149,13 @@ export function TrainerView({ prompt, onNext, onAnswered }: TrainerViewProps) {
                 <dd aria-hidden="true">{outcomes.remaining}</dd>
               </div>
               <div>
-                <dt>Win chance {formatPercent(outcomes.winProbability)}</dt>
-                <dd aria-hidden="true">{formatPercent(outcomes.winProbability)}</dd>
+                <dt>
+                  Win chance {formatPercent(outcomes.winProbability)} ({outcomes.win} /{" "}
+                  {outcomes.remaining})
+                </dt>
+                <dd aria-hidden="true">
+                  {formatPercent(outcomes.winProbability)} ({outcomes.win} / {outcomes.remaining})
+                </dd>
               </div>
               {betRequiredEquity !== null ? (
                 <div>
@@ -172,6 +189,10 @@ function CardRow({ label, cards }: { label: string; cards: Prompt["hero"] }) {
 }
 
 function formatPercent(value: number): string {
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+function formatOptionPercent(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 

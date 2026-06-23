@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { TrainerView, type TrainerAnswer } from "./components/TrainerView";
-import { parsePromptHash, promptToHash } from "./prompts/hashRouter";
+import { canonicalPromptKey, parsePromptHash, promptToHash } from "./prompts/hashRouter";
 import { generatePrompt } from "./prompts/questionGenerator";
 import type { Prompt, PromptMode } from "./prompts/types";
 import { loadProfile, recordAnswer, type PlayerProfile } from "./profile/profileStore";
@@ -23,6 +23,8 @@ function initialPrompt(): Prompt {
 export function App() {
   const [prompt, setPrompt] = useState<Prompt>(() => initialPrompt());
   const [profile, setProfile] = useState<PlayerProfile>(() => loadProfile());
+  const promptKey = canonicalPromptKey(prompt);
+  const restoredAnswer = profile.answeredPrompts[promptKey] ?? null;
 
   useEffect(() => {
     function handleHashChange(): void {
@@ -98,7 +100,12 @@ export function App() {
           </button>
         </div>
       </header>
-      <TrainerView prompt={prompt} onAnswered={handleAnswered} onNext={handleNext} />
+      <TrainerView
+        prompt={prompt}
+        restoredAnswer={restoredAnswer}
+        onAnswered={handleAnswered}
+        onNext={handleNext}
+      />
     </main>
   );
 }

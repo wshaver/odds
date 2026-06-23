@@ -9,11 +9,11 @@ import type { Prompt } from "../prompts/types";
 import { TrainerView } from "./TrainerView";
 
 function formatPercent(value: number): string {
-  return `${Math.round(value * 100)}%`;
+  return `${(value * 100).toFixed(1)}%`;
 }
 
 function optionLabel(value: number): string {
-  return formatPercent(value);
+  return `${Math.round(value * 100)}%`;
 }
 
 function expectedOddsCorrect(prompt: Prompt, selected: string): boolean {
@@ -51,6 +51,9 @@ describe("TrainerView", () => {
     expect(screen.getAllByText(/Win chance/i)[1]).toHaveTextContent(
       formatPercent(outcomes.winProbability),
     );
+    expect(screen.getAllByText(/Win chance/i)[1]).toHaveTextContent(
+      `${outcomes.win} / ${outcomes.remaining}`,
+    );
     expect(
       screen.getByText(/Pushes are neutral and do not count as wins/i),
     ).toBeInTheDocument();
@@ -60,6 +63,83 @@ describe("TrainerView", () => {
       selected,
       correct: expectedOddsCorrect(prompt, selected),
     });
+  });
+
+  test("restores prior answer feedback and locks answer buttons without recording again", async () => {
+    const user = userEvent.setup();
+    const prompt = generatePrompt("odds", "TrainerRestored");
+    const model = getAnswerModel(prompt);
+    if (model.kind !== "odds") {
+      throw new Error("Expected odds prompt");
+    }
+    const selected = optionLabel(model.options[0]);
+    const onAnswered = vi.fn();
+
+    render(
+      <TrainerView
+        prompt={prompt}
+        onNext={vi.fn()}
+        onAnswered={onAnswered}
+        restoredAnswer={{
+          selected,
+          correct: expectedOddsCorrect(prompt, selected),
+        }}
+      />,
+    );
+
+    expect(screen.getByText(/Selected answer/i)).toHaveTextContent(selected);
+    expect(screen.queryByText(/Answer to see the card math/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: selected })).toBeDisabled();
+    expect(screen.getByRole("button", { name: optionLabel(model.options[1]) })).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: optionLabel(model.options[1]) }));
+
+    expect(onAnswered).not.toHaveBeenCalled();
+  });
+
+  test("does not show stale restored answer feedback after prompt changes", () => {
+    const firstPrompt = generatePrompt("odds", "TrainerRestoredA");
+    const secondPrompt = generatePrompt("odds", "TrainerRestoredB");
+    const firstModel = getAnswerModel(firstPrompt);
+    if (firstModel.kind !== "odds") {
+      throw new Error("Expected odds prompt");
+    }
+    const selected = optionLabel(firstModel.options[0]);
+
+    const { rerender } = render(
+      <TrainerView
+        prompt={firstPrompt}
+        onNext={vi.fn()}
+        onAnswered={vi.fn()}
+        restoredAnswer={{ selected, correct: true }}
+      />,
+    );
+
+    expect(screen.getByText(/Selected answer/i)).toHaveTextContent(selected);
+
+    rerender(<TrainerView prompt={secondPrompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
+
+    expect(screen.queryByText(/Selected answer/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Correct|Review/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Answer to see the card math/i)).toBeInTheDocument();
+  });
+
+  test("formats win chance with one decimal percent precision", async () => {
+    const user = userEvent.setup();
+    const prompt = generatePrompt("odds", "TrainerOddsPrecision");
+    const model = getAnswerModel(prompt);
+    if (model.kind !== "odds") {
+      throw new Error("Expected odds prompt");
+    }
+    const outcomes = enumerateNextCardOutcomes(prompt);
+
+    render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: optionLabel(model.options[0]) }));
+
+    expect(screen.getAllByText(/Win chance/i)[1]).toHaveTextContent(
+      `${(outcomes.winProbability * 100).toFixed(1)}%`,
+    );
   });
 
   test("does not show stale odds answer feedback after prompt changes", async () => {

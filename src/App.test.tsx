@@ -1,0 +1,65 @@
+import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, test } from "vitest";
+
+import { App } from "./App";
+import { canonicalPromptKey, promptToHash } from "./prompts/hashRouter";
+import { generatePrompt, getAnswerModel } from "./prompts/questionGenerator";
+
+function optionLabel(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
+describe("App", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    window.history.replaceState(null, "", "/");
+  });
+
+  test("restores answered prompt feedback from profile storage for the current hash", () => {
+    const prompt = generatePrompt("odds", "AppRestoredAnswer");
+    const model = getAnswerModel(prompt);
+    if (model.kind !== "odds") {
+      throw new Error("Expected odds prompt");
+    }
+    const selected = optionLabel(model.options[0]);
+    const key = canonicalPromptKey(prompt);
+
+    localStorage.setItem(
+      "odds.playerProfile.v1",
+      JSON.stringify({
+        version: 1,
+        modes: {
+          tellMeTheOdds: {
+            answered: 1,
+            correct: 0,
+            currentStreak: 0,
+            bestStreak: 0,
+          },
+          whatsTheBet: {
+            answered: 0,
+            correct: 0,
+            currentStreak: 0,
+            bestStreak: 0,
+          },
+        },
+        weakSpots: {},
+        answeredPrompts: {
+          [key]: {
+            mode: "odds",
+            answeredAt: "2026-06-22T00:00:00.000Z",
+            selected,
+            correct: false,
+          },
+        },
+        settings: {},
+      }),
+    );
+    window.history.replaceState(null, "", promptToHash(prompt));
+
+    render(<App />);
+
+    expect(screen.getByText(/Selected answer/i)).toHaveTextContent(selected);
+    expect(screen.queryByText(/Answer to see the card math/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: selected })).toBeDisabled();
+  });
+});
