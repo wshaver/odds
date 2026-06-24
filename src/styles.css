@@ -125,12 +125,12 @@ button:disabled {
   border-radius: 8px;
   display: inline-flex;
   font-weight: 800;
-  gap: 3px;
-  height: 64px;
+  gap: 4px;
+  height: 72px;
   justify-content: center;
   line-height: 1;
-  min-width: 46px;
-  padding: 8px;
+  min-width: 56px;
+  padding: 10px;
 }
 
 .card-red {
@@ -142,11 +142,14 @@ button:disabled {
 }
 
 .card-rank {
-  font-size: 1.25rem;
+  display: inline-block;
+  font-size: 1.28rem;
+  text-align: center;
+  width: 2ch;
 }
 
 .card-suit {
-  font-size: 1.2rem;
+  font-size: 1.24rem;
 }
 
 .answer-panel h2 {

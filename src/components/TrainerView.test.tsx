@@ -29,7 +29,7 @@ function expectedOddsCorrect(prompt: Prompt, selected: string): boolean {
 }
 
 describe("TrainerView", () => {
-  test("orders board, opponent hand, and player hand on the left", () => {
+  test("orders opponent hand, board, and player hand on the left", () => {
     const prompt = generatePrompt("odds", "TrainerLayoutOrder");
 
     render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
@@ -39,10 +39,10 @@ describe("TrainerView", () => {
     const player = screen.getByText("Player hand");
 
     expect(
-      board.compareDocumentPosition(opponent) & Node.DOCUMENT_POSITION_FOLLOWING,
+      opponent.compareDocumentPosition(board) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
-      opponent.compareDocumentPosition(player) & Node.DOCUMENT_POSITION_FOLLOWING,
+      board.compareDocumentPosition(player) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(screen.queryByText(/Pair|Two Pair|Trips|Straight|Flush|Full House/i)).not.toBeInTheDocument();
 

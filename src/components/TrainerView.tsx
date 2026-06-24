@@ -103,8 +103,8 @@ export function TrainerView({
   return (
     <section className="trainer-layout" aria-label="Poker odds trainer">
       <div className="prompt-panel">
-        <CardRow label="Board" cards={prompt.board} />
         <CardRow label="Opponent hand" cards={prompt.opponent} />
+        <CardRow label="Board" cards={prompt.board} />
         <CardRow label="Player hand" cards={prompt.hero} />
 
         {prompt.mode === "bet" ? (
