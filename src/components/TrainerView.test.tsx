@@ -38,14 +38,17 @@ describe("TrainerView", () => {
 
     render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
 
-    expect(screen.getByLabelText("Poker table")).toBeInTheDocument();
-    expect(screen.getByLabelText("Opponent hand")).toBeInTheDocument();
-    expect(screen.getByLabelText("Board cards")).toBeInTheDocument();
-    expect(screen.getByLabelText("Hero hand")).toBeInTheDocument();
-    expect(screen.getByLabelText("Answer choices")).toBeInTheDocument();
+    const table = screen.getByLabelText("Poker table");
+    const tableScope = within(table);
+
+    expect(table).toBeInTheDocument();
+    expect(tableScope.getByLabelText("Opponent hand")).toBeInTheDocument();
+    expect(tableScope.getByLabelText("Board cards")).toBeInTheDocument();
+    expect(tableScope.getByLabelText("Hero hand")).toBeInTheDocument();
+    expect(tableScope.getByLabelText("Answer choices")).toBeInTheDocument();
 
     for (const card of [...prompt.opponent, ...prompt.board, ...prompt.hero]) {
-      expect(screen.getByLabelText(cardToString(card))).toBeInTheDocument();
+      expect(tableScope.getByLabelText(cardToString(card))).toBeVisible();
     }
 
     expect(screen.queryByText(/Pair|Two Pair|Trips|Straight|Flush|Full House/i)).not.toBeInTheDocument();
