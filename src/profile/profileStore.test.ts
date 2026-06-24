@@ -38,13 +38,13 @@ describe("profileStore", () => {
 
   test("recordAnswer records an answer once per canonical key", () => {
     const first = recordAnswer({
-      key: "mode=odds&hero=6s7s&board=8s9dKh&target=two-pair&seed=k4p9",
+      key: "mode=odds&hero=6s7s&opponent=TdTc&board=8s9dKh&seed=k4p9",
       mode: "odds",
       selected: "46%",
       correct: true,
     });
     const second = recordAnswer({
-      key: "mode=odds&hero=6s7s&board=8s9dKh&target=two-pair&seed=k4p9",
+      key: "mode=odds&hero=6s7s&opponent=TdTc&board=8s9dKh&seed=k4p9",
       mode: "odds",
       selected: "46%",
       correct: true,
@@ -59,13 +59,13 @@ describe("profileStore", () => {
       bestStreak: 1,
     });
     expect(Object.keys(second.profile.answeredPrompts)).toEqual([
-      "mode=odds&hero=6s7s&board=8s9dKh&target=two-pair&seed=k4p9",
+      "mode=odds&hero=6s7s&opponent=TdTc&board=8s9dKh&seed=k4p9",
     ]);
   });
 
   test("can reset profile data", () => {
     recordAnswer({
-      key: "mode=bet&hero=6s7s&board=8s9dKh2s&target=trips&pot=120&call=30&seed=k4p9",
+      key: "mode=bet&hero=6s7s&opponent=TdTc&board=8s9dKh2s&pot=120&call=30&seed=k4p9",
       mode: "bet",
       selected: "call",
       correct: true,
@@ -84,14 +84,14 @@ describe("profileStore", () => {
 
   test("incorrect answer increments answered and resets current streak", () => {
     recordAnswer({
-      key: "mode=odds&hero=AsAd&board=8s9dKh&target=pair&seed=first",
+      key: "mode=odds&hero=AsAd&opponent=TdTc&board=8s9dKh&seed=first",
       mode: "odds",
       selected: "90%",
       correct: true,
     });
 
     const result = recordAnswer({
-      key: "mode=odds&hero=AsAd&board=8s9dKh&target=pair&seed=second",
+      key: "mode=odds&hero=AsAd&opponent=TcTh&board=8s9dKh&seed=second",
       mode: "odds",
       selected: "10%",
       correct: false,
@@ -122,7 +122,7 @@ describe("profileStore", () => {
     expectDefaultProfile(loadProfile());
 
     const result = recordAnswer({
-      key: "mode=odds&hero=AsAd&board=8s9dKh&target=pair&seed=malformed",
+      key: "mode=odds&hero=AsAd&opponent=TdTc&board=8s9dKh&seed=malformed",
       mode: "odds",
       selected: "90%",
       correct: true,
@@ -151,7 +151,7 @@ describe("profileStore", () => {
     });
 
     const result = recordAnswer({
-      key: "mode=bet&hero=6s7s&board=8s9dKh2s&target=trips&pot=120&call=30&seed=setItem",
+      key: "mode=bet&hero=6s7s&opponent=TdTc&board=8s9dKh2s&pot=120&call=30&seed=setItem",
       mode: "bet",
       selected: "call",
       correct: true,

@@ -1,6 +1,5 @@
 import { buildDeck, type Card } from "../engine/cards";
 import { enumerateNextCardOutcomes } from "../engine/enumerator";
-import type { HandCategory } from "../engine/handEvaluator";
 import { requiredEquity, shouldCall } from "../engine/potOdds";
 import { COMMON_WIN_CHANCE_OPTIONS } from "./commonWinChanceOptions";
 import { createSeededRandom, shuffle } from "./seededRandom";
@@ -19,15 +18,6 @@ export type BetAnswerModel = {
 };
 
 export type AnswerModel = OddsAnswerModel | BetAnswerModel;
-
-const USEFUL_TARGETS: HandCategory[] = [
-  "pair",
-  "two-pair",
-  "trips",
-  "straight",
-  "flush",
-  "full-house",
-];
 
 const SEED_ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -58,16 +48,16 @@ function buildPrompt(mode: PromptMode, seed: string): Prompt {
   const random = createSeededRandom(compactSeed);
   const cards = shuffle(buildDeck(), `${compactSeed}:cards`);
   const hero = cards.slice(0, 2);
+  const opponent = cards.slice(2, 4);
   const boardLength = mode === "bet" || random() < 0.5 ? 4 : 3;
-  const board = cards.slice(2, 2 + boardLength);
-  const target = USEFUL_TARGETS[Math.floor(random() * USEFUL_TARGETS.length)];
+  const board = cards.slice(4, 4 + boardLength);
 
   if (mode === "odds") {
     return {
       mode,
       hero,
+      opponent,
       board,
-      target,
       seed: compactSeed,
     } satisfies OddsPrompt;
   }
@@ -78,8 +68,8 @@ function buildPrompt(mode: PromptMode, seed: string): Prompt {
   return {
     mode,
     hero,
+    opponent,
     board,
-    target,
     pot,
     call,
     seed: compactSeed,
@@ -123,15 +113,15 @@ export function getAnswerModel(prompt: Prompt): AnswerModel {
 }
 
 export function promptSignature(prompt: Prompt): string {
-  const cards = [...prompt.hero, ...prompt.board]
+  const cards = [...prompt.hero, ...prompt.opponent, ...prompt.board]
     .map((card) => `${card.rank}${card.suit}`)
     .join("");
 
   if (prompt.mode === "odds") {
-    return `odds:${cards}:${prompt.target}:${prompt.seed}`;
+    return `odds:${cards}:${prompt.seed}`;
   }
 
-  return `bet:${cards}:${prompt.target}:${prompt.pot}:${prompt.call}:${prompt.seed}`;
+  return `bet:${cards}:${prompt.pot}:${prompt.call}:${prompt.seed}`;
 }
 
 function oddsOptions(correctProbability: number, seed: string): number[] {

@@ -29,21 +29,26 @@ function expectedOddsCorrect(prompt: Prompt, selected: string): boolean {
 }
 
 describe("TrainerView", () => {
-  test("orders opponent target, board, and player hand on the left", () => {
+  test("orders board, opponent hand, and player hand on the left", () => {
     const prompt = generatePrompt("odds", "TrainerLayoutOrder");
 
     render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
 
-    const opponent = screen.getByText("Opponent hand");
     const board = screen.getByText("Board");
+    const opponent = screen.getByText("Opponent hand");
     const player = screen.getByText("Player hand");
 
     expect(
-      opponent.compareDocumentPosition(board) & Node.DOCUMENT_POSITION_FOLLOWING,
+      board.compareDocumentPosition(opponent) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
-      board.compareDocumentPosition(player) & Node.DOCUMENT_POSITION_FOLLOWING,
+      opponent.compareDocumentPosition(player) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+    expect(screen.queryByText(/Pair|Two Pair|Trips|Straight|Flush|Full House/i)).not.toBeInTheDocument();
+
+    for (const card of prompt.opponent) {
+      expect(screen.getByLabelText(cardToString(card))).toBeInTheDocument();
+    }
   });
 
   test("keeps answer feedback in the answer panel and filters choices after an incorrect answer", async () => {
@@ -161,8 +166,8 @@ describe("TrainerView", () => {
     const prompt: Prompt = {
       mode: "odds",
       hero: parseCardList("9c7d"),
+      opponent: parseCardList("AsAd"),
       board: parseCardList("2c2h3s2s"),
-      target: "full-house",
       seed: "TrainerNoWinningCards",
     };
     const model = getAnswerModel(prompt);
@@ -343,12 +348,21 @@ describe("TrainerView", () => {
   test("does not call onAnswered again when clicking multiple bet answers after an answer", async () => {
     const user = userEvent.setup();
     const prompt = generatePrompt("bet", "TrainerBetLock");
+    const model = getAnswerModel(prompt);
+    if (model.kind !== "bet") {
+      throw new Error("Expected bet prompt");
+    }
+    const firstAction = model.correctAction === "call" ? "Fold" : "Call";
     const onAnswered = vi.fn();
 
     render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={onAnswered} />);
 
-    await user.click(screen.getByRole("button", { name: "Call" }));
-    await user.click(screen.getByRole("button", { name: "Fold" }));
+    await user.click(screen.getByRole("button", { name: firstAction }));
+    for (const button of screen.getAllByRole("button")) {
+      if (button.classList.contains("answer-button")) {
+        await user.click(button);
+      }
+    }
 
     expect(onAnswered).toHaveBeenCalledTimes(1);
   });

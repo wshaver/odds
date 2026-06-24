@@ -1,5 +1,4 @@
 import { cardToString, parseCardList, type Card } from "../engine/cards";
-import { HAND_CATEGORIES, type HandCategory } from "../engine/handEvaluator";
 import type { BetPrompt, OddsPrompt, Prompt, PromptMode } from "./types";
 
 export function parsePromptHash(hash: string): Prompt {
@@ -12,23 +11,24 @@ export function parsePromptHash(hash: string): Prompt {
   const params = new URLSearchParams(match[2]);
   validateNoDuplicateParams(params, knownParamsForMode(mode));
   const hero = parseCards(requireParam(params, "hero"), "hero");
+  const opponent = parseCards(requireParam(params, "opponent"), "opponent");
   const board = parseCards(requireParam(params, "board"), "board");
-  const target = parseTarget(requireParam(params, "target"));
   const seed = requireParam(params, "seed");
 
   validateHero(hero);
+  validateOpponent(opponent);
   validateBoard(mode, board);
-  validateNoDuplicateCards([...hero, ...board]);
+  validateNoDuplicateCards([...hero, ...opponent, ...board]);
 
   if (mode === "odds") {
-    return { mode, hero, board, target, seed } satisfies OddsPrompt;
+    return { mode, hero, opponent, board, seed } satisfies OddsPrompt;
   }
 
   return {
     mode,
     hero,
+    opponent,
     board,
-    target,
     pot: parsePositiveNumber(requireParam(params, "pot"), "Pot"),
     call: parsePositiveNumber(requireParam(params, "call"), "Call"),
     seed,
@@ -39,16 +39,16 @@ export function promptToHash(prompt: Prompt): string {
   if (prompt.mode === "odds") {
     return `#/odds?${serializeParams([
       ["hero", cardsToString(prompt.hero)],
+      ["opponent", cardsToString(prompt.opponent)],
       ["board", cardsToString(prompt.board)],
-      ["target", prompt.target],
       ["seed", prompt.seed],
     ])}`;
   }
 
   return `#/bet?${serializeParams([
     ["hero", cardsToString(prompt.hero)],
+    ["opponent", cardsToString(prompt.opponent)],
     ["board", cardsToString(prompt.board)],
-    ["target", prompt.target],
     ["pot", String(prompt.pot)],
     ["call", String(prompt.call)],
     ["seed", prompt.seed],
@@ -60,8 +60,8 @@ export function canonicalPromptKey(prompt: Prompt): string {
     return serializeParams([
       ["mode", "odds"],
       ["hero", cardsToString(prompt.hero)],
+      ["opponent", cardsToString(prompt.opponent)],
       ["board", cardsToString(prompt.board)],
-      ["target", prompt.target],
       ["seed", prompt.seed],
     ]);
   }
@@ -69,8 +69,8 @@ export function canonicalPromptKey(prompt: Prompt): string {
   return serializeParams([
     ["mode", "bet"],
     ["hero", cardsToString(prompt.hero)],
+    ["opponent", cardsToString(prompt.opponent)],
     ["board", cardsToString(prompt.board)],
-    ["target", prompt.target],
     ["pot", String(prompt.pot)],
     ["call", String(prompt.call)],
     ["seed", prompt.seed],
@@ -95,10 +95,10 @@ function requireParam(params: URLSearchParams, key: string): string {
 
 function knownParamsForMode(mode: PromptMode): string[] {
   if (mode === "odds") {
-    return ["hero", "board", "target", "seed"];
+    return ["hero", "opponent", "board", "seed"];
   }
 
-  return ["hero", "board", "target", "pot", "call", "seed"];
+  return ["hero", "opponent", "board", "pot", "call", "seed"];
 }
 
 function validateNoDuplicateParams(params: URLSearchParams, knownParams: string[]): void {
@@ -117,17 +117,15 @@ function parseCards(value: string, key: string): Card[] {
   }
 }
 
-function parseTarget(value: string): HandCategory {
-  if (HAND_CATEGORIES.includes(value as HandCategory)) {
-    return value as HandCategory;
-  }
-
-  throw new Error(`Invalid target: ${value}`);
-}
-
 function validateHero(hero: Card[]): void {
   if (hero.length !== 2) {
     throw new Error("Prompt requires exactly 2 hero cards");
+  }
+}
+
+function validateOpponent(opponent: Card[]): void {
+  if (opponent.length !== 2) {
+    throw new Error("Prompt requires exactly 2 opponent cards");
   }
 }
 

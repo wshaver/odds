@@ -1,28 +1,16 @@
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { buildDeck } from "../src/engine/cards";
 import { enumerateNextCardOutcomes } from "../src/engine/enumerator";
-import type { HandCategory } from "../src/engine/handEvaluator";
-import { createSeededRandom, shuffle } from "../src/prompts/seededRandom";
-import type { OddsPrompt } from "../src/prompts/types";
+import { generatePrompt } from "../src/prompts/questionGenerator";
 
 const SAMPLE_COUNT = 100_000;
 const OUTPUT_PATH = resolve("src/prompts/commonWinChanceOptions.ts");
 
-const USEFUL_TARGETS: HandCategory[] = [
-  "pair",
-  "two-pair",
-  "trips",
-  "straight",
-  "flush",
-  "full-house",
-];
-
 const counts = new Map<number, number>();
 
 for (let index = 0; index < SAMPLE_COUNT; index += 1) {
-  const prompt = buildSimulationPrompt(`common-win-chance-${index}`);
+  const prompt = generatePrompt("odds", sampleSeed(index));
   const result = enumerateNextCardOutcomes(prompt);
 
   if (result.win === 0) {
@@ -54,16 +42,6 @@ writeFileSync(OUTPUT_PATH, file);
 
 console.log(`Wrote ${probabilities.length} win chance options to ${OUTPUT_PATH}`);
 
-function buildSimulationPrompt(seed: string): OddsPrompt {
-  const random = createSeededRandom(seed);
-  const cards = shuffle(buildDeck(), `${seed}:cards`);
-  const boardLength = random() < 0.5 ? 4 : 3;
-
-  return {
-    mode: "odds",
-    hero: cards.slice(0, 2),
-    board: cards.slice(2, 2 + boardLength),
-    target: USEFUL_TARGETS[Math.floor(random() * USEFUL_TARGETS.length)],
-    seed,
-  };
+function sampleSeed(index: number): string {
+  return `cwc${index.toString(36).padStart(4, "0")}`;
 }

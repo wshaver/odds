@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { parseCardList } from "./cards";
 import {
-  compareCategoryToTarget,
   compareBestHands,
+  compareCategoryToTarget,
   evaluateBestCategory,
   HAND_CATEGORIES,
 } from "./handEvaluator";

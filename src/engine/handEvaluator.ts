@@ -14,6 +14,16 @@ export const HAND_CATEGORIES = [
 
 export type HandCategory = (typeof HAND_CATEGORIES)[number];
 export type OutcomeBucket = "win" | "push" | "miss";
+export type HandScore = {
+  category: HandCategory;
+  ranks: number[];
+};
+
+type RankGroup = {
+  rank: Rank;
+  value: number;
+  count: number;
+};
 
 const RANK_VALUES: Record<Rank, number> = {
   "2": 2,
@@ -53,17 +63,6 @@ export function compareCategoryToTarget(
 export function compareCategories(left: HandCategory, right: HandCategory): number {
   return HAND_CATEGORIES.indexOf(left) - HAND_CATEGORIES.indexOf(right);
 }
-
-export type HandScore = {
-  category: HandCategory;
-  ranks: number[];
-};
-
-type RankGroup = {
-  rank: Rank;
-  value: number;
-  count: number;
-};
 
 export function compareBestHands(left: Card[], right: Card[]): number {
   return compareHandScores(evaluateBestHand(left), evaluateBestHand(right));
@@ -106,85 +105,6 @@ export function compareHandScores(left: HandScore, right: HandScore): number {
   return 0;
 }
 
-function evaluateFiveCardHand(cards: Card[]): HandScore {
-  const flush = hasFlush(cards);
-  const straightHigh = straightHighValue(cards.map((card) => card.rank));
-  const groups = rankGroups(cards);
-  const counts = groups.map((group) => group.count).sort((a, b) => b - a);
-
-  if (flush && straightHigh !== null) {
-    return { category: "straight-flush", ranks: [straightHigh] };
-  }
-
-  const four = groups.find((group) => group.count === 4);
-  if (four !== undefined) {
-    return {
-      category: "four-kind",
-      ranks: [four.value, ...groups.filter((group) => group.count !== 4).map((group) => group.value)],
-    };
-  }
-
-  if (hasFullHouse(counts)) {
-    const trips = groups.filter((group) => group.count >= 3);
-    const pairs = groups.filter((group) => group.count >= 2 && group.value !== trips[0].value);
-    return { category: "full-house", ranks: [trips[0].value, pairs[0].value] };
-  }
-
-  if (flush) {
-    return { category: "flush", ranks: groups.map((group) => group.value) };
-  }
-
-  if (straightHigh !== null) {
-    return { category: "straight", ranks: [straightHigh] };
-  }
-
-  const trips = groups.find((group) => group.count === 3);
-  if (trips !== undefined) {
-    return {
-      category: "trips",
-      ranks: [trips.value, ...groups.filter((group) => group.count !== 3).map((group) => group.value)],
-    };
-  }
-
-  const pairs = groups.filter((group) => group.count === 2);
-  if (pairs.length >= 2) {
-    const kickers = groups.filter((group) => group.count === 1);
-    return { category: "two-pair", ranks: [pairs[0].value, pairs[1].value, kickers[0].value] };
-  }
-
-  if (pairs.length === 1) {
-    return {
-      category: "pair",
-      ranks: [pairs[0].value, ...groups.filter((group) => group.count === 1).map((group) => group.value)],
-    };
-  }
-
-  return { category: "high-card", ranks: groups.map((group) => group.value) };
-}
-
-function fiveCardCombinations(cards: Card[]): Card[][] {
-  const combinations: Card[][] = [];
-  for (let first = 0; first < cards.length - 4; first += 1) {
-    for (let second = first + 1; second < cards.length - 3; second += 1) {
-      for (let third = second + 1; third < cards.length - 2; third += 1) {
-        for (let fourth = third + 1; fourth < cards.length - 1; fourth += 1) {
-          for (let fifth = fourth + 1; fifth < cards.length; fifth += 1) {
-            combinations.push([cards[first], cards[second], cards[third], cards[fourth], cards[fifth]]);
-          }
-        }
-      }
-    }
-  }
-  return combinations;
-}
-
-function rankGroups(cards: Card[]): RankGroup[] {
-  const counts = countBy(cards.map((card) => card.rank));
-  return [...counts.entries()]
-    .map(([rank, count]) => ({ rank, value: RANK_VALUES[rank], count }))
-    .sort((left, right) => right.count - left.count || right.value - left.value);
-}
-
 function countBy<T>(values: T[]): Map<T, number> {
   const counts = new Map<T, number>();
   for (const value of values) {
@@ -217,6 +137,100 @@ function hasStraightFlush(cards: Card[]): boolean {
 
 function hasStraight(ranks: Rank[]): boolean {
   return straightHighValue(ranks) !== null;
+}
+
+function evaluateFiveCardHand(cards: Card[]): HandScore {
+  const flush = hasFlush(cards);
+  const straightHigh = straightHighValue(cards.map((card) => card.rank));
+  const groups = rankGroups(cards);
+
+  if (flush && straightHigh !== null) {
+    return { category: "straight-flush", ranks: [straightHigh] };
+  }
+
+  const four = groups.find((group) => group.count === 4);
+  if (four !== undefined) {
+    return {
+      category: "four-kind",
+      ranks: [
+        four.value,
+        ...groups.filter((group) => group.count !== 4).map((group) => group.value),
+      ],
+    };
+  }
+
+  const counts = groups.map((group) => group.count).sort((a, b) => b - a);
+  if (hasFullHouse(counts)) {
+    const trips = groups.filter((group) => group.count >= 3);
+    const pairs = groups.filter((group) => group.count >= 2 && group.value !== trips[0].value);
+    return { category: "full-house", ranks: [trips[0].value, pairs[0].value] };
+  }
+
+  if (flush) {
+    return { category: "flush", ranks: groups.map((group) => group.value) };
+  }
+
+  if (straightHigh !== null) {
+    return { category: "straight", ranks: [straightHigh] };
+  }
+
+  const trips = groups.find((group) => group.count === 3);
+  if (trips !== undefined) {
+    return {
+      category: "trips",
+      ranks: [
+        trips.value,
+        ...groups.filter((group) => group.count !== 3).map((group) => group.value),
+      ],
+    };
+  }
+
+  const pairs = groups.filter((group) => group.count === 2);
+  if (pairs.length >= 2) {
+    return {
+      category: "two-pair",
+      ranks: [
+        pairs[0].value,
+        pairs[1].value,
+        groups.filter((group) => group.count === 1)[0].value,
+      ],
+    };
+  }
+
+  if (pairs.length === 1) {
+    return {
+      category: "pair",
+      ranks: [
+        pairs[0].value,
+        ...groups.filter((group) => group.count === 1).map((group) => group.value),
+      ],
+    };
+  }
+
+  return { category: "high-card", ranks: groups.map((group) => group.value) };
+}
+
+function fiveCardCombinations(cards: Card[]): Card[][] {
+  const combinations: Card[][] = [];
+  for (let first = 0; first < cards.length - 4; first += 1) {
+    for (let second = first + 1; second < cards.length - 3; second += 1) {
+      for (let third = second + 1; third < cards.length - 2; third += 1) {
+        for (let fourth = third + 1; fourth < cards.length - 1; fourth += 1) {
+          for (let fifth = fourth + 1; fifth < cards.length; fifth += 1) {
+            combinations.push([cards[first], cards[second], cards[third], cards[fourth], cards[fifth]]);
+          }
+        }
+      }
+    }
+  }
+  return combinations;
+}
+
+function rankGroups(cards: Card[]): RankGroup[] {
+  const counts = countBy(cards.map((card) => card.rank));
+  return [...counts.entries()]
+    .map(([rank, count]) => ({ rank, value: RANK_VALUES[rank], count }))
+    .sort((left, right) => right.count - left.count || right.value - left.value);
 }
 
 function straightHighValue(ranks: Rank[]): number | null {

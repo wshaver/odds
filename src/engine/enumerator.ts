@@ -1,15 +1,10 @@
 import { buildDeck, removeKnownCards, type Card } from "./cards";
-import {
-  compareCategories,
-  compareCategoryToTarget,
-  evaluateBestCategory,
-  type HandCategory,
-} from "./handEvaluator";
+import { compareBestHands } from "./handEvaluator";
 
 export type EnumerateNextCardInput = {
   hero: Card[];
+  opponent: Card[];
   board: Card[];
-  target: HandCategory;
 };
 
 export type EnumerationResult = {
@@ -25,11 +20,14 @@ export function enumerateNextCardOutcomes(input: EnumerateNextCardInput): Enumer
   if (input.hero.length !== 2) {
     throw new Error("Hero must have exactly 2 cards");
   }
+  if (input.opponent.length !== 2) {
+    throw new Error("Opponent must have exactly 2 cards");
+  }
   if (input.board.length !== 3 && input.board.length !== 4) {
     throw new Error("Board must have 3 or 4 cards");
   }
 
-  const knownCards = [...input.hero, ...input.board];
+  const knownCards = [...input.hero, ...input.opponent, ...input.board];
   const nextCards = removeKnownCards(buildDeck(), knownCards);
   const result: EnumerationResult = {
     remaining: nextCards.length,
@@ -41,35 +39,18 @@ export function enumerateNextCardOutcomes(input: EnumerateNextCardInput): Enumer
   };
 
   for (const nextCard of nextCards) {
-    const category = evaluateBestCategory([...knownCards, nextCard]);
-    const boardCategory =
-      input.board.length === 4 ? evaluateBestCategory([...input.board, nextCard]) : null;
-    const outcome = classifyOutcome(category, boardCategory, input.target);
-    result[outcome] += 1;
-    if (outcome === "win") {
+    const board = [...input.board, nextCard];
+    const comparison = compareBestHands([...input.hero, ...board], [...input.opponent, ...board]);
+    if (comparison > 0) {
+      result.win += 1;
       result.winningCards.push(nextCard);
+    } else if (comparison === 0) {
+      result.push += 1;
+    } else {
+      result.miss += 1;
     }
   }
 
   result.winProbability = result.win / result.remaining;
   return result;
-}
-
-function classifyOutcome(
-  heroCategory: HandCategory,
-  boardCategory: HandCategory | null,
-  target: HandCategory,
-): "win" | "push" | "miss" {
-  const heroOutcome = compareCategoryToTarget(heroCategory, target);
-
-  if (
-    heroOutcome === "win" &&
-    boardCategory !== null &&
-    compareCategoryToTarget(boardCategory, target) === "win" &&
-    compareCategories(heroCategory, boardCategory) <= 0
-  ) {
-    return "push";
-  }
-
-  return heroOutcome;
 }

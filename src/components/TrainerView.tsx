@@ -103,11 +103,8 @@ export function TrainerView({
   return (
     <section className="trainer-layout" aria-label="Poker odds trainer">
       <div className="prompt-panel">
-        <div className="target-line">
-          <span className="section-label">Opponent hand</span>
-          <strong>{formatHandRank(prompt.target)}</strong>
-        </div>
         <CardRow label="Board" cards={prompt.board} />
+        <CardRow label="Opponent hand" cards={prompt.opponent} />
         <CardRow label="Player hand" cards={prompt.hero} />
 
         {prompt.mode === "bet" ? (
@@ -250,13 +247,6 @@ function formatChipAmount(value: number): string {
 
 function roundProbability(value: number): number {
   return Number(value.toFixed(2));
-}
-
-function formatHandRank(value: string): string {
-  return value
-    .split("-")
-    .map((part) => titleCase(part))
-    .join(" ");
 }
 
 function titleCase(value: string): string {

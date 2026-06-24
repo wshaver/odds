@@ -7,17 +7,8 @@ import { parsePromptHash, promptToHash } from "./hashRouter";
 import { COMMON_WIN_CHANCE_OPTIONS } from "./commonWinChanceOptions";
 import { generatePrompt, getAnswerModel } from "./questionGenerator";
 
-const USEFUL_TARGETS = new Set([
-  "pair",
-  "two-pair",
-  "trips",
-  "straight",
-  "flush",
-  "full-house",
-]);
-
 function cardIds(prompt: ReturnType<typeof generatePrompt>): string[] {
-  return [...prompt.hero, ...prompt.board].map(cardToString);
+  return [...prompt.hero, ...prompt.opponent, ...prompt.board].map(cardToString);
 }
 
 function roundedProbability(value: number): number {
@@ -30,8 +21,8 @@ describe("questionGenerator", () => {
 
     expect(prompt.mode).toBe("odds");
     expect(prompt.hero).toHaveLength(2);
+    expect(prompt.opponent).toHaveLength(2);
     expect([3, 4]).toContain(prompt.board.length);
-    expect(USEFUL_TARGETS.has(prompt.target)).toBe(true);
     expect(prompt.seed).toMatch(/^[A-Za-z0-9]+$/);
     expect(parsePromptHash(promptToHash(prompt))).toEqual(prompt);
   });
@@ -41,8 +32,8 @@ describe("questionGenerator", () => {
 
     expect(prompt.mode).toBe("bet");
     expect(prompt.hero).toHaveLength(2);
+    expect(prompt.opponent).toHaveLength(2);
     expect(prompt.board).toHaveLength(4);
-    expect(USEFUL_TARGETS.has(prompt.target)).toBe(true);
     expect(prompt.seed).toMatch(/^[A-Za-z0-9]+$/);
     expect(prompt.pot).toBeGreaterThan(0);
     expect(prompt.call).toBeGreaterThan(0);
