@@ -227,6 +227,11 @@ button:disabled {
   margin-top: 0;
 }
 
+.opponent-zone .card-row,
+.opponent-zone .opponent-action {
+  transform: translateY(16px);
+}
+
 .board-zone {
   align-items: center;
   left: 50%;
@@ -257,13 +262,17 @@ button:disabled {
   bottom: calc(8px - var(--table-border));
 }
 
+.hero-zone .card-row {
+  transform: translateY(-16px);
+}
+
 .action-pad {
   position: relative;
   width: min(100%, 430px);
 }
 
 .feedback-strip {
-  top: calc(var(--table-stage-pad) + var(--table-border) - 4px);
+  top: calc(var(--table-stage-pad) + var(--table-border) + 12px);
   left: clamp(
     -33px,
     calc(17px - ((100cqw - 1080px) / 2)),
