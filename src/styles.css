@@ -89,8 +89,9 @@ button:disabled {
   flex: 0 0 auto;
   flex-wrap: wrap;
   gap: 3px;
-  max-width: min(100%, 360px);
+  min-width: 164px;
   padding: 3px;
+  width: min(100%, 360px);
 }
 
 .mode-buttons button {
@@ -101,6 +102,7 @@ button:disabled {
   font-weight: 800;
   min-height: 34px;
   min-width: 0;
+  overflow-wrap: anywhere;
   padding: 6px 12px;
 }
 
@@ -130,7 +132,8 @@ button:disabled {
 
 .table-felt {
   min-height: min(72vh, 680px);
-  overflow: hidden;
+  isolation: isolate;
+  overflow: visible;
   position: relative;
   border: clamp(12px, 1.9vw, 22px) solid #3b2515;
   border-radius: 48% / 50%;
@@ -155,12 +158,14 @@ button:disabled {
   border-radius: inherit;
   box-shadow: inset 0 0 18px rgba(244, 207, 126, 0.1);
   pointer-events: none;
+  z-index: 0;
 }
 
 .table-felt::after {
   content: "";
   position: absolute;
   inset: 0;
+  border-radius: inherit;
   background-image:
     radial-gradient(rgba(255, 255, 255, 0.08) 0.7px, transparent 0.7px),
     radial-gradient(rgba(0, 0, 0, 0.1) 0.8px, transparent 0.8px);
@@ -172,6 +177,7 @@ button:disabled {
     13px 13px;
   opacity: 0.32;
   pointer-events: none;
+  z-index: 0;
 }
 
 .card-row-wrap,
@@ -184,8 +190,8 @@ button:disabled {
 
 .opponent-zone {
   position: absolute;
-  left: 11%;
-  top: 13%;
+  left: 14%;
+  top: 17%;
 }
 
 .board-zone {
@@ -558,10 +564,15 @@ button:disabled {
     border-radius: 12px;
     display: grid;
     gap: 10px;
+    grid-template-columns: 1fr;
     padding: 11px;
   }
 
   .mode-buttons {
+    flex: 1 1 auto;
+    inline-size: 100%;
+    justify-self: stretch;
+    min-width: 0;
     width: 100%;
   }
 
