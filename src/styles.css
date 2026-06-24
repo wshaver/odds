@@ -564,7 +564,7 @@ button:disabled {
   .table-felt {
     border-radius: 34px;
     display: grid;
-    gap: 20px;
+    gap: 32px;
     grid-template-areas:
       "opponent"
       "board"
@@ -646,7 +646,7 @@ button:disabled {
   .table-felt {
     --table-border: 16px;
     border-width: var(--table-border);
-    gap: 18px;
+    gap: 30px;
     padding: 6px 10px 8px;
   }
 
