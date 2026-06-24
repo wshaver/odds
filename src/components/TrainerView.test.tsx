@@ -33,7 +33,7 @@ function expectedOddsCorrect(prompt: Prompt, selected: string): boolean {
 }
 
 describe("TrainerView", () => {
-  test("renders visible opponent, board, and hero cards inside the table stage", () => {
+  test("renders visible opponent, board, and player cards inside the table stage", () => {
     const prompt = generatePrompt("odds", "TrainerLayoutOrder");
 
     render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
@@ -44,13 +44,17 @@ describe("TrainerView", () => {
 
     expect(table).toBeInTheDocument();
     expect(felt).not.toBeNull();
-    expect(tableScope.getByRole("group", { name: "Opponent hand" })).toBeInTheDocument();
+    expect(tableScope.getByRole("group", { name: "Biff" })).toBeInTheDocument();
     expect(tableScope.getByRole("group", { name: "Board cards" })).toBeInTheDocument();
-    expect(tableScope.getByRole("group", { name: "Hero hand" })).toBeInTheDocument();
+    expect(tableScope.getByRole("group", { name: "You" })).toBeInTheDocument();
     expect(tableScope.getByRole("region", { name: "Answer choices" })).toBeInTheDocument();
     expect(tableScope.getByRole("region", { name: "Win chance details" })).toBeInTheDocument();
     expect(felt).toContainElement(tableScope.getByRole("region", { name: "Answer choices" }));
     expect(felt).toContainElement(tableScope.getByRole("region", { name: "Win chance details" }));
+    expect(table).not.toHaveTextContent("Board cards");
+    expect(table).not.toHaveTextContent("Win chance ?");
+    expect(table).toHaveTextContent("Biff");
+    expect(table).toHaveTextContent("You");
 
     for (const card of [...prompt.opponent, ...prompt.board, ...prompt.hero]) {
       expect(tableScope.getByLabelText(cardToString(card))).toBeVisible();
@@ -350,7 +354,8 @@ describe("TrainerView", () => {
     render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={onAnswered} />);
 
     expect(screen.getByLabelText("Table status")).toHaveTextContent(`Pot ${formatMoney(prompt.pot)}`);
-    expect(screen.getByLabelText("Table status")).toHaveTextContent(`Call ${formatMoney(prompt.call)}`);
+    expect(screen.queryByLabelText("Table status")).not.toHaveTextContent(`Call ${formatMoney(prompt.call)}`);
+    expect(screen.getByLabelText("Biff action")).toHaveTextContent(`Bet ${formatMoney(prompt.call)}`);
 
     await user.click(screen.getByRole("button", { name: "Call" }));
 
@@ -374,13 +379,14 @@ describe("TrainerView", () => {
     });
   });
 
-  test("renders table badges for bet prompt pot and call values", () => {
+  test("renders the pot near the board and the opponent bet near Biff in bet mode", () => {
     const prompt = generatePrompt("bet", "TrainerBetBadges");
 
     render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
 
     expect(screen.getByLabelText("Table status")).toHaveTextContent(`Pot ${formatMoney(prompt.pot)}`);
-    expect(screen.getByLabelText("Table status")).toHaveTextContent(`Call ${formatMoney(prompt.call)}`);
+    expect(screen.getByLabelText("Table status")).not.toHaveTextContent(`Call ${formatMoney(prompt.call)}`);
+    expect(screen.getByLabelText("Biff action")).toHaveTextContent(`Bet ${formatMoney(prompt.call)}`);
   });
 
   test("does not call onAnswered again when clicking multiple odds answers after an answer", async () => {

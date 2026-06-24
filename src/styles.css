@@ -190,19 +190,38 @@ button:disabled {
 
 .opponent-zone {
   position: absolute;
-  left: 14%;
-  top: 17%;
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: auto auto;
+  left: 50%;
+  top: 13%;
+  transform: translateX(-50%);
+}
+
+.opponent-zone .section-label {
+  grid-column: 1 / -1;
+}
+
+.opponent-zone .opponent-action {
+  justify-content: flex-start;
+  margin-top: 18px;
 }
 
 .board-zone {
   align-items: center;
-  display: grid;
-  gap: 12px;
-  justify-items: center;
   left: 50%;
   position: absolute;
-  top: 43%;
+  top: 50%;
   transform: translate(-50%, -50%);
+}
+
+.board-zone > .table-badges {
+  left: 50%;
+  position: absolute;
+  top: calc(100% + 12px);
+  transform: translateX(-50%);
+  width: max-content;
 }
 
 .hero-zone {
@@ -295,7 +314,10 @@ button:disabled {
   flex-wrap: wrap;
   gap: 8px;
   justify-content: center;
-  min-height: 30px;
+}
+
+.table-badges:empty {
+  display: none;
 }
 
 .table-badges span {
@@ -532,13 +554,20 @@ button:disabled {
 
   .opponent-zone {
     grid-area: opponent;
-    justify-self: start;
-    margin-left: clamp(4px, 8vw, 48px);
+    justify-self: center;
+    margin-left: 0;
   }
 
   .board-zone {
     grid-area: board;
     width: 100%;
+  }
+
+  .board-zone > .table-badges {
+    margin-top: 12px;
+    position: static;
+    transform: none;
+    width: auto;
   }
 
   .hero-zone {

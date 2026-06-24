@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 
 import { enumerateNextCardOutcomes } from "../engine/enumerator";
 import { maxCorrectCall, requiredEquity } from "../engine/potOdds";
@@ -106,21 +106,22 @@ export function TrainerView({
     <section className="trainer-layout" aria-label="Poker odds trainer">
       <section className="table-stage" aria-label="Poker table">
         <div className="table-felt">
-          <CardRow className="opponent-zone" label="Opponent hand" cards={prompt.opponent} />
+          <CardRow className="opponent-zone" label="Biff" cards={prompt.opponent}>
+            {prompt.mode === "bet" ? (
+              <div className="table-badges opponent-action" role="group" aria-label="Biff action">
+                <span>Bet {formatMoney(prompt.call)}</span>
+              </div>
+            ) : null}
+          </CardRow>
           <div className="board-zone" role="group" aria-label="Board area">
-            <CardRow label="Board cards" cards={prompt.board} />
+            <CardRow label="Board cards" cards={prompt.board} hideLabel />
             <div className="table-badges" role="group" aria-label="Table status">
               {prompt.mode === "bet" ? (
-                <>
-                  <span>Pot {formatMoney(prompt.pot)}</span>
-                  <span>Call {formatMoney(prompt.call)}</span>
-                </>
-              ) : (
-                <span>Win chance ?</span>
-              )}
+                <span>Pot {formatMoney(prompt.pot)}</span>
+              ) : null}
             </div>
           </div>
-          <CardRow className="hero-zone" label="Hero hand" cards={prompt.hero} />
+          <CardRow className="hero-zone" label="You" cards={prompt.hero} />
           <section className="action-pad" aria-label="Answer choices">
             <h2>{prompt.mode === "odds" ? "What is the win chance?" : "What is the bet?"}</h2>
             <div className="answer-grid">
@@ -251,10 +252,14 @@ function CardRow({
   label,
   cards,
   className,
+  hideLabel = false,
+  children,
 }: {
   label: string;
   cards: Prompt["hero"];
   className?: string;
+  hideLabel?: boolean;
+  children?: ReactNode;
 }) {
   return (
     <div
@@ -262,12 +267,13 @@ function CardRow({
       role="group"
       aria-label={label}
     >
-      <span className="section-label">{label}</span>
+      {hideLabel ? null : <span className="section-label">{label}</span>}
       <div className="card-row">
         {cards.map((card) => (
           <CardView card={card} key={`${card.rank}${card.suit}`} />
         ))}
       </div>
+      {children}
     </div>
   );
 }
