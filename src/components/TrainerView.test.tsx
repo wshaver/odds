@@ -40,12 +40,17 @@ describe("TrainerView", () => {
 
     const table = screen.getByLabelText("Poker table");
     const tableScope = within(table);
+    const felt = table.querySelector(".table-felt");
 
     expect(table).toBeInTheDocument();
+    expect(felt).not.toBeNull();
     expect(tableScope.getByLabelText("Opponent hand")).toBeInTheDocument();
     expect(tableScope.getByLabelText("Board cards")).toBeInTheDocument();
     expect(tableScope.getByLabelText("Hero hand")).toBeInTheDocument();
     expect(tableScope.getByLabelText("Answer choices")).toBeInTheDocument();
+    expect(tableScope.getByLabelText("Win chance details")).toBeInTheDocument();
+    expect(felt).toContainElement(tableScope.getByLabelText("Answer choices"));
+    expect(felt).toContainElement(tableScope.getByLabelText("Win chance details"));
 
     for (const card of [...prompt.opponent, ...prompt.board, ...prompt.hero]) {
       expect(tableScope.getByLabelText(cardToString(card))).toBeVisible();
@@ -54,7 +59,7 @@ describe("TrainerView", () => {
     expect(screen.queryByText(/Pair|Two Pair|Trips|Straight|Flush|Full House/i)).not.toBeInTheDocument();
   });
 
-  test("keeps answer feedback in the answer panel and filters choices after an incorrect answer", async () => {
+  test("keeps answer feedback in the feedback strip and filters choices after an incorrect answer", async () => {
     const user = userEvent.setup();
     const prompt = generatePrompt("odds", "TrainerAnswerFilterWrong");
     const model = getAnswerModel(prompt);
