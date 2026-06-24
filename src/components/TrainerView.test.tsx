@@ -18,6 +18,10 @@ function optionLabel(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 
+function formatMoney(value: number): string {
+  return `$${value.toLocaleString("en-US")}`;
+}
+
 function expectedOddsCorrect(prompt: Prompt, selected: string): boolean {
   if (prompt.mode !== "odds") {
     throw new Error("Expected odds prompt");
@@ -69,10 +73,13 @@ describe("TrainerView", () => {
 
     await user.click(screen.getByRole("button", { name: selected }));
 
-    expect(screen.getByRole("button", { name: selected })).toHaveClass("answer-incorrect");
+    expect(screen.getByRole("button", { name: selected })).toHaveClass(
+      "answer-incorrect",
+      "answer-selected",
+    );
     expect(screen.getByRole("button", { name: correct })).toHaveClass("answer-correct");
     expect(screen.queryByRole("button", { name: hiddenIncorrect })).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Win chance details")).toHaveTextContent("Selected answer");
+    expect(screen.getByLabelText("Win chance details")).not.toHaveTextContent("Selected answer");
   });
 
   test("shows only the selected correct answer after a correct answer", async () => {
@@ -91,7 +98,10 @@ describe("TrainerView", () => {
 
     await user.click(screen.getByRole("button", { name: correct }));
 
-    expect(screen.getByRole("button", { name: correct })).toHaveClass("answer-correct");
+    expect(screen.getByRole("button", { name: correct })).toHaveClass(
+      "answer-correct",
+      "answer-selected",
+    );
     for (const incorrect of incorrectOptions) {
       expect(screen.queryByRole("button", { name: incorrect })).not.toBeInTheDocument();
     }
@@ -112,7 +122,7 @@ describe("TrainerView", () => {
     const selected = optionLabel(model.options[0]);
     await user.click(screen.getByRole("button", { name: selected }));
 
-    expect(screen.getByText(/Selected answer/i)).toHaveTextContent(selected);
+    expect(screen.queryByText(/Selected answer/i)).not.toBeInTheDocument();
     expect(screen.getByText(/Win outs/i)).toHaveTextContent(String(outcomes.win));
     expect(screen.getAllByText(/Pushes/i)[0]).toHaveTextContent(String(outcomes.push));
     expect(screen.getByText(/Remaining cards/i)).toHaveTextContent(
@@ -207,7 +217,7 @@ describe("TrainerView", () => {
       />,
     );
 
-    expect(screen.getByText(/Selected answer/i)).toHaveTextContent(selected);
+    expect(screen.queryByText(/Selected answer/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Answer to see the card math/i)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: selected })).toBeDisabled();
 
@@ -239,13 +249,13 @@ describe("TrainerView", () => {
       />,
     );
 
-    expect(screen.getByText(/Selected answer/i)).toHaveTextContent(selected);
+    expect(screen.queryByText(/Selected answer/i)).not.toBeInTheDocument();
 
     rerender(<TrainerView prompt={secondPrompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
 
     expect(screen.queryByText(/Selected answer/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Correct|Incorrect/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/Answer to see the card math/i)).toBeInTheDocument();
+    expect(screen.getByLabelText("Win chance details")).toBeEmptyDOMElement();
   });
 
   test("formats win chance with one decimal percent precision", async () => {
@@ -282,13 +292,13 @@ describe("TrainerView", () => {
 
     await user.click(screen.getByRole("button", { name: selected }));
 
-    expect(screen.getByText(/Selected answer/i)).toHaveTextContent(selected);
+    expect(screen.queryByText(/Selected answer/i)).not.toBeInTheDocument();
 
     rerender(<TrainerView prompt={secondPrompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
 
     expect(screen.queryByText(/Selected answer/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Correct|Incorrect/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/Answer to see the card math/i)).toBeInTheDocument();
+    expect(screen.getByLabelText("Win chance details")).toBeEmptyDOMElement();
   });
 
   test("answers a bet prompt with Call/Fold and shows required equity", async () => {
@@ -302,14 +312,17 @@ describe("TrainerView", () => {
 
     render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={onAnswered} />);
 
+    expect(screen.getByLabelText("Bet details")).toHaveTextContent(`Pot: ${formatMoney(prompt.pot)}`);
+    expect(screen.getByLabelText("Bet details")).toHaveTextContent(`Call: ${formatMoney(prompt.call)}`);
+
     await user.click(screen.getByRole("button", { name: "Call" }));
 
-    expect(screen.getByText(/Selected answer/i)).toHaveTextContent("Call");
+    expect(screen.queryByText(/Selected answer/i)).not.toBeInTheDocument();
     expect(screen.getByText(/Required equity/i)).toHaveTextContent(
       formatPercent(model.requiredEquity),
     );
     expect(screen.getByText(/Max correct call/i)).toHaveTextContent(
-      String(
+      formatMoney(
         maxCorrectCall({
           pot: prompt.pot,
           winProbability: enumerateNextCardOutcomes(prompt).winProbability,

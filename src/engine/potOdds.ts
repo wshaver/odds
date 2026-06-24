@@ -31,7 +31,8 @@ export function maxCorrectCall(input: MaxCorrectCallInput): number {
     return Number.POSITIVE_INFINITY;
   }
 
-  return Math.floor((input.winProbability * input.pot) / (1 - input.winProbability));
+  const maxCall = (input.winProbability * input.pot) / (1 - input.winProbability);
+  return Math.floor(maxCall + Number.EPSILON * Math.max(1, Math.abs(maxCall)) * 4);
 }
 
 export function shouldCall(input: ShouldCallInput): boolean {

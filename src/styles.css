@@ -179,16 +179,31 @@ button:disabled {
   opacity: 1;
 }
 
+.answer-button.answer-selected {
+  box-shadow:
+    0 0 0 3px #ffffff,
+    0 0 0 6px #173024;
+  transform: translateY(-1px);
+}
+
 .answer-button.answer-correct {
   background: #dff3e6;
   border-color: #4f9d67;
   color: #0f5b2e;
 }
 
+.answer-button.answer-correct.answer-selected {
+  border-color: #176132;
+}
+
 .answer-button.answer-incorrect {
   background: #fde8e8;
   border-color: #c65353;
   color: #8a1f1f;
+}
+
+.answer-button.answer-incorrect.answer-selected {
+  border-color: #8a1f1f;
 }
 
 .win-chance-details {

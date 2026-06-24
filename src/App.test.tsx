@@ -58,8 +58,9 @@ describe("App", () => {
 
     render(<App />);
 
-    expect(screen.getByText(/Selected answer/i)).toHaveTextContent(selected);
+    expect(screen.queryByText(/Selected answer/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Answer to see the card math/i)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: selected })).toBeDisabled();
+    expect(screen.getByRole("button", { name: selected })).toHaveClass("answer-selected");
   });
 });

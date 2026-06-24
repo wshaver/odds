@@ -24,4 +24,8 @@ describe("maxCorrectCall", () => {
   it("rounds down to a whole chip amount", () => {
     expect(maxCorrectCall({ pot: 100, winProbability: 0.33 })).toBe(49);
   });
+
+  it("does not round exact integer call amounts down due to floating point drift", () => {
+    expect(maxCorrectCall({ pot: 180, winProbability: 41 / 44 })).toBe(2460);
+  });
 });

@@ -109,8 +109,8 @@ export function TrainerView({
 
         {prompt.mode === "bet" ? (
           <div className="bet-line" aria-label="Bet details">
-            <span>Pot: {prompt.pot}</span>
-            <span>Call: {prompt.call}</span>
+            <span>Pot: {formatMoney(prompt.pot)}</span>
+            <span>Call: {formatMoney(prompt.call)}</span>
           </div>
         ) : null}
       </div>
@@ -127,10 +127,14 @@ export function TrainerView({
                   : choice.label === activeAnswer.selected
                     ? "answer-incorrect"
                     : "";
+            const selectedClass =
+              activeAnswer !== null && choice.label === activeAnswer.selected
+                ? "answer-selected"
+                : "";
 
             return (
               <button
-                className={["answer-button", resultClass].filter(Boolean).join(" ")}
+                className={["answer-button", resultClass, selectedClass].filter(Boolean).join(" ")}
                 disabled={activeAnswer !== null}
                 key={choice.key}
                 onClick={() => answerPrompt(choice.label, choice.correct)}
@@ -144,17 +148,13 @@ export function TrainerView({
 
         <div className="win-chance-details" aria-label="Win chance details" aria-live="polite">
           {activeAnswer === null ? (
-            <p className="feedback-placeholder">Answer to see the card math.</p>
+            null
           ) : (
             <>
               <div className={activeAnswer.correct ? "result-correct" : "result-miss"}>
                 {activeAnswer.correct ? "Correct" : "Incorrect"}
               </div>
               <dl className="feedback-list">
-                <div>
-                  <dt>Selected answer {activeAnswer.selected}</dt>
-                  <dd aria-hidden="true">{activeAnswer.selected}</dd>
-                </div>
                 <div>
                   <dt>Win outs {outcomes.win}</dt>
                   <dd aria-hidden="true">{outcomes.win}</dd>
@@ -242,7 +242,11 @@ function formatOptionPercent(value: number): string {
 }
 
 function formatChipAmount(value: number): string {
-  return Number.isFinite(value) ? String(value) : "Any";
+  return Number.isFinite(value) ? formatMoney(value) : "Any";
+}
+
+function formatMoney(value: number): string {
+  return `$${value.toLocaleString("en-US")}`;
 }
 
 function roundProbability(value: number): number {
