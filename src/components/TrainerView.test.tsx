@@ -195,6 +195,38 @@ describe("TrainerView", () => {
     ).not.toBeInTheDocument();
   });
 
+  test("shows zero outs and no winning-card reveal when already winning every river", async () => {
+    const user = userEvent.setup();
+    const prompt: Prompt = {
+      mode: "bet",
+      hero: parseCardList("7cTh"),
+      opponent: parseCardList("8cQc"),
+      board: parseCardList("4sAcTdTs"),
+      pot: 160,
+      call: 55,
+      seed: "TrainerAlreadyWinning",
+    };
+    const outcomes = enumerateNextCardOutcomes(prompt);
+
+    expect(outcomes.win).toBe(outcomes.remaining);
+
+    render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "Call" }));
+
+    expect(screen.getByText(/Win outs/i)).toHaveTextContent("0");
+    expect(screen.getByText(/Win chance/i)).toHaveTextContent("100.0%");
+    expect(screen.getByText(/Win chance/i)).not.toHaveTextContent(
+      `${outcomes.win} / ${outcomes.remaining}`,
+    );
+    expect(
+      screen.getByText(/Already winning on every remaining card/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /View winning cards/i }),
+    ).not.toBeInTheDocument();
+  });
+
   test("restores prior answer feedback and locks answer buttons without recording again", async () => {
     const user = userEvent.setup();
     const prompt = generatePrompt("odds", "TrainerRestored");

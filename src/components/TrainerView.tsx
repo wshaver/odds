@@ -49,7 +49,9 @@ export function TrainerView({
     prompt.mode === "bet"
       ? maxCorrectCall({ pot: prompt.pot, winProbability: outcomes.winProbability })
       : null;
-  const hasWinningCards = outcomes.winningCards.length > 0;
+  const isGuaranteedWin = outcomes.win === outcomes.remaining;
+  const displayedWinOuts = isGuaranteedWin ? 0 : outcomes.win;
+  const hasWinningCards = !isGuaranteedWin && outcomes.winningCards.length > 0;
   const [answer, setAnswer] = useState<AnswerState | null>(null);
   const [showWinningCards, setShowWinningCards] = useState(false);
   const activeAnswer =
@@ -156,8 +158,8 @@ export function TrainerView({
               </div>
               <dl className="feedback-list">
                 <div>
-                  <dt>Win outs {outcomes.win}</dt>
-                  <dd aria-hidden="true">{outcomes.win}</dd>
+                  <dt>Win outs {displayedWinOuts}</dt>
+                  <dd aria-hidden="true">{displayedWinOuts}</dd>
                 </div>
                 <div>
                   <dt>Pushes {outcomes.push}</dt>
@@ -168,14 +170,23 @@ export function TrainerView({
                   <dd aria-hidden="true">{outcomes.remaining}</dd>
                 </div>
                 <div>
-                  <dt>
-                    Win chance {formatPercent(outcomes.winProbability)} ({outcomes.win} /{" "}
-                    {outcomes.remaining})
-                  </dt>
-                  <dd aria-hidden="true">
-                    {formatPercent(outcomes.winProbability)} ({outcomes.win} /{" "}
-                    {outcomes.remaining})
-                  </dd>
+                  {isGuaranteedWin ? (
+                    <>
+                      <dt>Win chance {formatPercent(outcomes.winProbability)}</dt>
+                      <dd aria-hidden="true">{formatPercent(outcomes.winProbability)}</dd>
+                    </>
+                  ) : (
+                    <>
+                      <dt>
+                        Win chance {formatPercent(outcomes.winProbability)} ({outcomes.win} /{" "}
+                        {outcomes.remaining})
+                      </dt>
+                      <dd aria-hidden="true">
+                        {formatPercent(outcomes.winProbability)} ({outcomes.win} /{" "}
+                        {outcomes.remaining})
+                      </dd>
+                    </>
+                  )}
                 </div>
                 {betRequiredEquity !== null ? (
                   <div>
@@ -190,7 +201,11 @@ export function TrainerView({
                   </div>
                 ) : null}
               </dl>
-              <p className="feedback-note">Pushes are neutral and do not count as wins.</p>
+              <p className="feedback-note">
+                {isGuaranteedWin
+                  ? "Already winning on every remaining card."
+                  : "Pushes are neutral and do not count as wins."}
+              </p>
               {hasWinningCards ? (
                 <>
                   <button

@@ -49,15 +49,16 @@ describe("questionGenerator", () => {
     }
   });
 
-  test("generated prompts in both modes have at least one winning next card", () => {
+  test("generated prompts in both modes have at least one winning next card without being guaranteed wins", () => {
     for (const mode of ["odds", "bet"] as const) {
       for (let index = 0; index < 200; index += 1) {
         const prompt = generatePrompt(mode, `ZeroWin${mode}${index}`);
+        const outcomes = enumerateNextCardOutcomes(prompt);
 
-        expect(
-          enumerateNextCardOutcomes(prompt).win,
-          `${mode} seed ${prompt.seed}`,
-        ).toBeGreaterThan(0);
+        expect(outcomes.win, `${mode} seed ${prompt.seed}`).toBeGreaterThan(0);
+        expect(outcomes.win, `${mode} seed ${prompt.seed}`).toBeLessThan(
+          outcomes.remaining,
+        );
       }
     }
   });

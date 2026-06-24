@@ -35,7 +35,8 @@ export function generatePrompt(mode: PromptMode, seed?: string): Prompt;
 export function generatePrompt(mode: PromptMode, seed = randomSeed()): Prompt {
   for (let attempt = 0; attempt < 100; attempt += 1) {
     const prompt = buildPrompt(mode, seedForAttempt(seed, attempt));
-    if (enumerateNextCardOutcomes(prompt).win > 0) {
+    const outcomes = enumerateNextCardOutcomes(prompt);
+    if (outcomes.win > 0 && outcomes.win < outcomes.remaining) {
       return prompt;
     }
   }
