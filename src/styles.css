@@ -651,11 +651,11 @@ button:disabled {
   }
 
   .opponent-zone .section-label {
-    top: calc(4px - var(--table-border));
+    top: calc(5px - var(--table-border));
   }
 
   .hero-zone .section-label {
-    bottom: calc(4px - var(--table-border));
+    bottom: calc(3px - var(--table-border));
   }
 
   .card-row {
