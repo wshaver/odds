@@ -122,21 +122,25 @@ button:disabled {
 
 .trainer-layout {
   margin: 0 auto;
-  max-width: 1180px;
+  max-width: 1080px;
 }
 
 .table-stage {
   border-radius: 44px;
+  display: grid;
+  gap: 16px;
+  justify-items: center;
   padding: clamp(8px, 1.4vw, 16px);
 }
 
 .table-felt {
-  min-height: min(72vh, 680px);
+  min-height: min(68vh, 620px);
   isolation: isolate;
   overflow: visible;
   position: relative;
   border: clamp(12px, 1.9vw, 22px) solid #3b2515;
-  border-radius: 48% / 50%;
+  border-radius: 34px;
+  width: 100%;
   background:
     radial-gradient(ellipse at 50% 46%, rgba(255, 255, 255, 0.1), transparent 27%),
     radial-gradient(ellipse at 32% 28%, rgba(93, 190, 126, 0.2), transparent 31%),
@@ -233,10 +237,8 @@ button:disabled {
 }
 
 .action-pad {
-  bottom: 9%;
-  position: absolute;
-  right: 8%;
-  width: clamp(320px, 32vw, 430px);
+  position: relative;
+  width: min(100%, 430px);
 }
 
 .feedback-strip {
@@ -532,7 +534,6 @@ button:disabled {
       "opponent"
       "board"
       "hero"
-      "actions"
       "feedback";
     justify-items: center;
     min-height: auto;
@@ -542,7 +543,6 @@ button:disabled {
   .opponent-zone,
   .board-zone,
   .hero-zone,
-  .action-pad,
   .feedback-strip {
     bottom: auto;
     left: auto;
@@ -574,10 +574,6 @@ button:disabled {
 
   .hero-zone {
     grid-area: hero;
-  }
-
-  .action-pad {
-    grid-area: actions;
   }
 
   .feedback-strip {

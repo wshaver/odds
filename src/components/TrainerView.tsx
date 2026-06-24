@@ -122,43 +122,6 @@ export function TrainerView({
             </div>
           </div>
           <CardRow className="hero-zone" label="You" cards={prompt.hero} />
-          <section className="action-pad" aria-label="Answer choices">
-            <h2>{prompt.mode === "odds" ? "What is the win chance?" : "What is the bet?"}</h2>
-            <div className="answer-grid">
-              {visibleAnswerChoices.map((choice) => {
-                const resultClass =
-                  activeAnswer === null
-                    ? ""
-                    : choice.correct
-                      ? "answer-correct"
-                      : choice.label === activeAnswer.selected
-                        ? "answer-incorrect"
-                        : "";
-                const selectedClass =
-                  activeAnswer !== null && choice.label === activeAnswer.selected
-                    ? "answer-selected"
-                    : "";
-
-                return (
-                  <button
-                    className={["answer-button", resultClass, selectedClass].filter(Boolean).join(" ")}
-                    disabled={activeAnswer !== null}
-                    key={choice.key}
-                    onClick={() => answerPrompt(choice.label, choice.correct)}
-                    type="button"
-                  >
-                    {choice.label}
-                  </button>
-                );
-              })}
-            </div>
-            {activeAnswer !== null ? (
-              <button className="next-button" onClick={onNext} type="button">
-                Next
-              </button>
-            ) : null}
-          </section>
-
           <section
             className="feedback-strip win-chance-details"
             aria-label="Win chance details"
@@ -243,6 +206,42 @@ export function TrainerView({
             )}
           </section>
         </div>
+        <section className="action-pad" aria-label="Answer choices">
+          <h2>{prompt.mode === "odds" ? "What is the win chance?" : "What is the bet?"}</h2>
+          <div className="answer-grid">
+            {visibleAnswerChoices.map((choice) => {
+              const resultClass =
+                activeAnswer === null
+                  ? ""
+                  : choice.correct
+                    ? "answer-correct"
+                    : choice.label === activeAnswer.selected
+                      ? "answer-incorrect"
+                      : "";
+              const selectedClass =
+                activeAnswer !== null && choice.label === activeAnswer.selected
+                  ? "answer-selected"
+                  : "";
+
+              return (
+                <button
+                  className={["answer-button", resultClass, selectedClass].filter(Boolean).join(" ")}
+                  disabled={activeAnswer !== null}
+                  key={choice.key}
+                  onClick={() => answerPrompt(choice.label, choice.correct)}
+                  type="button"
+                >
+                  {choice.label}
+                </button>
+              );
+            })}
+          </div>
+          {activeAnswer !== null ? (
+            <button className="next-button" onClick={onNext} type="button">
+              Next
+            </button>
+          ) : null}
+        </section>
       </section>
     </section>
   );
