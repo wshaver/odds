@@ -24,6 +24,7 @@ describe("App", () => {
     expect(banner).toBeInTheDocument();
     expect(main).toBeInTheDocument();
     expect(main).not.toContainElement(banner);
+    expect(screen.getByRole("heading", { name: "Poker Odds Trainer" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Training modes" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Odds" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "Bet" })).toHaveAttribute("aria-pressed", "false");

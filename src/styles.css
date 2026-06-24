@@ -243,9 +243,10 @@ button:disabled {
 
 .feedback-strip {
   bottom: 9%;
-  left: 8%;
-  max-width: min(34vw, 340px);
+  left: -88px;
+  max-width: min(100%, 362px);
   position: absolute;
+  width: 362px;
 }
 
 .feedback-strip:empty {
@@ -505,7 +506,7 @@ button:disabled {
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
-  justify-content: center;
+  justify-content: flex-start;
   margin-top: 12px;
   max-height: 168px;
   overflow: auto;
@@ -578,6 +579,7 @@ button:disabled {
 
   .feedback-strip {
     grid-area: feedback;
+    width: min(100%, 362px);
   }
 }
 

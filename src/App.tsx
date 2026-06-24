@@ -71,7 +71,7 @@ export function App() {
     <div className="app-shell">
       <header className="top-bar" role="banner">
         <div className="brand-block">
-          <h1>Odds</h1>
+          <h1>Poker Odds Trainer</h1>
           <div className="stats-line" aria-label="Mode progress">
             <span>
               Odds {profile.modes.tellMeTheOdds.correct}/
