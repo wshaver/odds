@@ -193,7 +193,8 @@ button:disabled {
   align-items: center;
   display: grid;
   gap: 8px;
-  grid-template-columns: auto auto;
+  grid-template-columns: auto;
+  justify-items: center;
   left: 50%;
   top: 13%;
   transform: translateX(-50%);
@@ -204,8 +205,8 @@ button:disabled {
 }
 
 .opponent-zone .opponent-action {
-  justify-content: flex-start;
-  margin-top: 18px;
+  justify-content: center;
+  margin-top: 0;
 }
 
 .board-zone {
@@ -235,7 +236,7 @@ button:disabled {
   bottom: 9%;
   position: absolute;
   right: 8%;
-  width: clamp(198px, 21vw, 252px);
+  width: clamp(320px, 32vw, 430px);
 }
 
 .feedback-strip {
@@ -355,7 +356,8 @@ button:disabled {
 .answer-grid {
   display: grid;
   gap: 8px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-columns: minmax(68px, 1fr);
+  grid-auto-flow: column;
 }
 
 .answer-button {
@@ -634,7 +636,7 @@ button:disabled {
   }
 
   .answer-grid {
-    grid-template-columns: 1fr;
+    gap: 6px;
   }
 }
 
