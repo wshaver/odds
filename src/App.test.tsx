@@ -15,6 +15,17 @@ describe("App", () => {
     window.history.replaceState(null, "", "/");
   });
 
+  test("renders a distinct mode bar with progress counters", () => {
+    render(<App />);
+
+    expect(screen.getByRole("banner")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Training modes" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Odds" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Bet" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByLabelText("Mode progress")).toHaveTextContent("Odds");
+    expect(screen.getByLabelText("Mode progress")).toHaveTextContent("Bet");
+  });
+
   test("restores answered prompt feedback from profile storage for the current hash", () => {
     const prompt = generatePrompt("odds", "AppRestoredAnswer");
     const model = getAnswerModel(prompt);

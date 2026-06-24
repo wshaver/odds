@@ -69,10 +69,10 @@ export function App() {
 
   return (
     <main className="app-shell">
-      <header className="top-bar">
-        <div>
+      <header className="top-bar" role="banner">
+        <div className="brand-block">
           <h1>Odds</h1>
-          <div className="stats-line" aria-label="Session stats">
+          <div className="stats-line" aria-label="Mode progress">
             <span>
               Odds {profile.modes.tellMeTheOdds.correct}/
               {profile.modes.tellMeTheOdds.answered}
@@ -83,7 +83,7 @@ export function App() {
             </span>
           </div>
         </div>
-        <div className="mode-buttons" aria-label="Mode">
+        <nav className="mode-buttons" aria-label="Training modes">
           <button
             aria-pressed={prompt.mode === "odds"}
             onClick={() => switchMode("odds")}
@@ -98,7 +98,7 @@ export function App() {
           >
             Bet
           </button>
-        </div>
+        </nav>
       </header>
       <TrainerView
         prompt={prompt}
