@@ -104,12 +104,12 @@ export function TrainerView({
 
   return (
     <section className="trainer-layout" aria-label="Poker odds trainer">
-      <div className="table-stage" aria-label="Poker table">
+      <section className="table-stage" aria-label="Poker table">
         <div className="table-felt">
           <CardRow className="opponent-zone" label="Opponent hand" cards={prompt.opponent} />
-          <div className="board-zone">
+          <div className="board-zone" role="group" aria-label="Board area">
             <CardRow label="Board cards" cards={prompt.board} />
-            <div className="table-badges" aria-label="Table status">
+            <div className="table-badges" role="group" aria-label="Table status">
               {prompt.mode === "bet" ? (
                 <>
                   <span>Pot {formatMoney(prompt.pot)}</span>
@@ -121,7 +121,7 @@ export function TrainerView({
             </div>
           </div>
           <CardRow className="hero-zone" label="Hero hand" cards={prompt.hero} />
-          <div className="action-pad" aria-label="Answer choices">
+          <section className="action-pad" aria-label="Answer choices">
             <h2>{prompt.mode === "odds" ? "What is the win chance?" : "What is the bet?"}</h2>
             <div className="answer-grid">
               {visibleAnswerChoices.map((choice) => {
@@ -156,9 +156,9 @@ export function TrainerView({
                 Next
               </button>
             ) : null}
-          </div>
+          </section>
 
-          <div
+          <section
             className="feedback-strip win-chance-details"
             aria-label="Win chance details"
             aria-live="polite"
@@ -240,9 +240,9 @@ export function TrainerView({
                 ) : null}
               </>
             )}
-          </div>
+          </section>
         </div>
-      </div>
+      </section>
     </section>
   );
 }
@@ -257,7 +257,11 @@ function CardRow({
   className?: string;
 }) {
   return (
-    <div className={["card-row-wrap", className].filter(Boolean).join(" ")} aria-label={label}>
+    <div
+      className={["card-row-wrap", className].filter(Boolean).join(" ")}
+      role="group"
+      aria-label={label}
+    >
       <span className="section-label">{label}</span>
       <div className="card-row">
         {cards.map((card) => (

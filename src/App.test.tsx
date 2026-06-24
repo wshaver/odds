@@ -18,7 +18,12 @@ describe("App", () => {
   test("renders a distinct mode bar with progress counters", () => {
     render(<App />);
 
-    expect(screen.getByRole("banner")).toBeInTheDocument();
+    const banner = screen.getByRole("banner");
+    const main = screen.getByRole("main");
+
+    expect(banner).toBeInTheDocument();
+    expect(main).toBeInTheDocument();
+    expect(main).not.toContainElement(banner);
     expect(screen.getByRole("navigation", { name: "Training modes" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Odds" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "Bet" })).toHaveAttribute("aria-pressed", "false");

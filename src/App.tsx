@@ -68,7 +68,7 @@ export function App() {
   }
 
   return (
-    <main className="app-shell">
+    <div className="app-shell">
       <header className="top-bar" role="banner">
         <div className="brand-block">
           <h1>Odds</h1>
@@ -100,12 +100,14 @@ export function App() {
           </button>
         </nav>
       </header>
-      <TrainerView
-        prompt={prompt}
-        restoredAnswer={restoredAnswer}
-        onAnswered={handleAnswered}
-        onNext={handleNext}
-      />
-    </main>
+      <main>
+        <TrainerView
+          prompt={prompt}
+          restoredAnswer={restoredAnswer}
+          onAnswered={handleAnswered}
+          onNext={handleNext}
+        />
+      </main>
+    </div>
   );
 }

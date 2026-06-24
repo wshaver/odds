@@ -38,19 +38,19 @@ describe("TrainerView", () => {
 
     render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
 
-    const table = screen.getByLabelText("Poker table");
+    const table = screen.getByRole("region", { name: "Poker table" });
     const tableScope = within(table);
     const felt = table.querySelector(".table-felt");
 
     expect(table).toBeInTheDocument();
     expect(felt).not.toBeNull();
-    expect(tableScope.getByLabelText("Opponent hand")).toBeInTheDocument();
-    expect(tableScope.getByLabelText("Board cards")).toBeInTheDocument();
-    expect(tableScope.getByLabelText("Hero hand")).toBeInTheDocument();
-    expect(tableScope.getByLabelText("Answer choices")).toBeInTheDocument();
-    expect(tableScope.getByLabelText("Win chance details")).toBeInTheDocument();
-    expect(felt).toContainElement(tableScope.getByLabelText("Answer choices"));
-    expect(felt).toContainElement(tableScope.getByLabelText("Win chance details"));
+    expect(tableScope.getByRole("group", { name: "Opponent hand" })).toBeInTheDocument();
+    expect(tableScope.getByRole("group", { name: "Board cards" })).toBeInTheDocument();
+    expect(tableScope.getByRole("group", { name: "Hero hand" })).toBeInTheDocument();
+    expect(tableScope.getByRole("region", { name: "Answer choices" })).toBeInTheDocument();
+    expect(tableScope.getByRole("region", { name: "Win chance details" })).toBeInTheDocument();
+    expect(felt).toContainElement(tableScope.getByRole("region", { name: "Answer choices" }));
+    expect(felt).toContainElement(tableScope.getByRole("region", { name: "Win chance details" }));
 
     for (const card of [...prompt.opponent, ...prompt.board, ...prompt.hero]) {
       expect(tableScope.getByLabelText(cardToString(card))).toBeVisible();
