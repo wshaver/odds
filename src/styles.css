@@ -1,4 +1,7 @@
 :root {
+  --page-pad: clamp(12px, 2.4vw, 28px);
+  --table-stage-pad: clamp(8px, 1.4vw, 16px);
+  --table-border: clamp(12px, 1.9vw, 22px);
   color: #f6eddc;
   background: #10100e;
   font-family:
@@ -41,9 +44,10 @@ button:disabled {
 }
 
 .app-shell {
+  container-type: inline-size;
   min-height: 100vh;
   overflow-x: hidden;
-  padding: 14px clamp(12px, 2.4vw, 28px) 24px;
+  padding: 14px var(--page-pad) 24px;
 }
 
 .top-bar {
@@ -130,7 +134,8 @@ button:disabled {
   display: grid;
   gap: 16px;
   justify-items: center;
-  padding: clamp(8px, 1.4vw, 16px);
+  padding: var(--table-stage-pad);
+  position: relative;
 }
 
 .table-felt {
@@ -138,7 +143,7 @@ button:disabled {
   isolation: isolate;
   overflow: visible;
   position: relative;
-  border: clamp(12px, 1.9vw, 22px) solid #3b2515;
+  border: var(--table-border) solid #3b2515;
   border-radius: 34px;
   width: 100%;
   background:
@@ -242,8 +247,12 @@ button:disabled {
 }
 
 .feedback-strip {
-  bottom: 9%;
-  left: -88px;
+  top: calc(var(--table-stage-pad) + var(--table-border) + 13% - 4px);
+  left: clamp(
+    -33px,
+    calc(17px - ((100cqw - 1080px) / 2)),
+    17px
+  );
   max-width: min(100%, 362px);
   position: absolute;
   width: 362px;
@@ -534,8 +543,7 @@ button:disabled {
     grid-template-areas:
       "opponent"
       "board"
-      "hero"
-      "feedback";
+      "hero";
     justify-items: center;
     min-height: auto;
     padding: 28px 14px;
@@ -578,7 +586,6 @@ button:disabled {
   }
 
   .feedback-strip {
-    grid-area: feedback;
     width: min(100%, 362px);
   }
 }

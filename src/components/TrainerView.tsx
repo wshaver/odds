@@ -87,6 +87,91 @@ export function TrainerView({
       : answerChoices.filter(
           (choice) => choice.correct || choice.label === activeAnswer.selected,
         );
+  const feedbackStrip = (
+    <section
+      className="feedback-strip win-chance-details"
+      aria-label="Win chance details"
+      aria-live="polite"
+    >
+      {activeAnswer === null ? (
+        null
+      ) : (
+        <>
+          <div className={activeAnswer.correct ? "result-correct" : "result-miss"}>
+            {activeAnswer.correct ? "Correct" : "Incorrect"}
+          </div>
+          <dl className="feedback-list">
+            <div>
+              <dt>Win outs {displayedWinOuts}</dt>
+              <dd aria-hidden="true">{displayedWinOuts}</dd>
+            </div>
+            <div>
+              <dt>Pushes {outcomes.push}</dt>
+              <dd aria-hidden="true">{outcomes.push}</dd>
+            </div>
+            <div>
+              <dt>Remaining cards {outcomes.remaining}</dt>
+              <dd aria-hidden="true">{outcomes.remaining}</dd>
+            </div>
+            <div>
+              {isGuaranteedWin ? (
+                <>
+                  <dt>Win chance {formatPercent(outcomes.winProbability)}</dt>
+                  <dd aria-hidden="true">{formatPercent(outcomes.winProbability)}</dd>
+                </>
+              ) : (
+                <>
+                  <dt>
+                    Win chance {formatPercent(outcomes.winProbability)} ({outcomes.win} /{" "}
+                    {outcomes.remaining})
+                  </dt>
+                  <dd aria-hidden="true">
+                    {formatPercent(outcomes.winProbability)} ({outcomes.win} /{" "}
+                    {outcomes.remaining})
+                  </dd>
+                </>
+              )}
+            </div>
+            {betRequiredEquity !== null ? (
+              <div>
+                <dt>Required equity {formatPercent(betRequiredEquity)}</dt>
+                <dd aria-hidden="true">{formatPercent(betRequiredEquity)}</dd>
+              </div>
+            ) : null}
+            {betMaxCorrectCall !== null ? (
+              <div>
+                <dt>Max correct call {formatChipAmount(betMaxCorrectCall)}</dt>
+                <dd aria-hidden="true">{formatChipAmount(betMaxCorrectCall)}</dd>
+              </div>
+            ) : null}
+          </dl>
+          <p className="feedback-note">
+            {isGuaranteedWin
+              ? "Already winning on every remaining card."
+              : "Pushes are neutral and do not count as wins."}
+          </p>
+          {hasWinningCards ? (
+            <>
+              <button
+                className="secondary-button"
+                onClick={() => setShowWinningCards((current) => !current)}
+                type="button"
+              >
+                {showWinningCards ? "Hide winning cards" : "View winning cards"}
+              </button>
+              {showWinningCards ? (
+                <div className="winning-cards" aria-label="Winning cards">
+                  {outcomes.winningCards.map((card) => (
+                    <CardView card={card} key={`${card.rank}${card.suit}`} />
+                  ))}
+                </div>
+              ) : null}
+            </>
+          ) : null}
+        </>
+      )}
+    </section>
+  );
 
   useEffect(() => {
     setAnswer(null);
@@ -122,89 +207,6 @@ export function TrainerView({
             </div>
           </div>
           <CardRow className="hero-zone" label="You" cards={prompt.hero} />
-          <section
-            className="feedback-strip win-chance-details"
-            aria-label="Win chance details"
-            aria-live="polite"
-          >
-            {activeAnswer === null ? (
-              null
-            ) : (
-              <>
-                <div className={activeAnswer.correct ? "result-correct" : "result-miss"}>
-                  {activeAnswer.correct ? "Correct" : "Incorrect"}
-                </div>
-                <dl className="feedback-list">
-                  <div>
-                    <dt>Win outs {displayedWinOuts}</dt>
-                    <dd aria-hidden="true">{displayedWinOuts}</dd>
-                  </div>
-                  <div>
-                    <dt>Pushes {outcomes.push}</dt>
-                    <dd aria-hidden="true">{outcomes.push}</dd>
-                  </div>
-                  <div>
-                    <dt>Remaining cards {outcomes.remaining}</dt>
-                    <dd aria-hidden="true">{outcomes.remaining}</dd>
-                  </div>
-                  <div>
-                    {isGuaranteedWin ? (
-                      <>
-                        <dt>Win chance {formatPercent(outcomes.winProbability)}</dt>
-                        <dd aria-hidden="true">{formatPercent(outcomes.winProbability)}</dd>
-                      </>
-                    ) : (
-                      <>
-                        <dt>
-                          Win chance {formatPercent(outcomes.winProbability)} ({outcomes.win} /{" "}
-                          {outcomes.remaining})
-                        </dt>
-                        <dd aria-hidden="true">
-                          {formatPercent(outcomes.winProbability)} ({outcomes.win} /{" "}
-                          {outcomes.remaining})
-                        </dd>
-                      </>
-                    )}
-                  </div>
-                  {betRequiredEquity !== null ? (
-                    <div>
-                      <dt>Required equity {formatPercent(betRequiredEquity)}</dt>
-                      <dd aria-hidden="true">{formatPercent(betRequiredEquity)}</dd>
-                    </div>
-                  ) : null}
-                  {betMaxCorrectCall !== null ? (
-                    <div>
-                      <dt>Max correct call {formatChipAmount(betMaxCorrectCall)}</dt>
-                      <dd aria-hidden="true">{formatChipAmount(betMaxCorrectCall)}</dd>
-                    </div>
-                  ) : null}
-                </dl>
-                <p className="feedback-note">
-                  {isGuaranteedWin
-                    ? "Already winning on every remaining card."
-                    : "Pushes are neutral and do not count as wins."}
-                </p>
-                {hasWinningCards ? (
-                  <>
-                    <button
-                      className="secondary-button"
-                      onClick={() => setShowWinningCards((current) => !current)}
-                      type="button"
-                    >
-                      {showWinningCards ? "Hide winning cards" : "View winning cards"}
-                    </button>
-                    {showWinningCards ? (
-                      <div className="winning-cards" aria-label="Winning cards">
-                        {outcomes.winningCards.map((card) => (
-                          <CardView card={card} key={`${card.rank}${card.suit}`} />
-                        ))}
-                      </div>
-                    ) : null}
-                  </>
-                ) : null}
-              </>
-            )}
-          </section>
         </div>
         <section className="action-pad" aria-label="Answer choices">
           <h2>{prompt.mode === "odds" ? "What is the win chance?" : "What is the bet?"}</h2>
@@ -242,6 +244,7 @@ export function TrainerView({
             </button>
           ) : null}
         </section>
+        {feedbackStrip}
       </section>
     </section>
   );

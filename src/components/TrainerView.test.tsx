@@ -50,7 +50,7 @@ describe("TrainerView", () => {
     expect(tableScope.getByRole("region", { name: "Answer choices" })).toBeInTheDocument();
     expect(tableScope.getByRole("region", { name: "Win chance details" })).toBeInTheDocument();
     expect(felt).not.toContainElement(tableScope.getByRole("region", { name: "Answer choices" }));
-    expect(felt).toContainElement(tableScope.getByRole("region", { name: "Win chance details" }));
+    expect(felt).not.toContainElement(tableScope.getByRole("region", { name: "Win chance details" }));
     expect(table).not.toHaveTextContent("Board cards");
     expect(table).not.toHaveTextContent("Win chance ?");
     expect(table).toHaveTextContent("Biff");
