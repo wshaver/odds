@@ -586,7 +586,7 @@ button:disabled {
   }
 
   .feedback-strip {
-    width: min(100%, 362px);
+    width: min(100%, 430px);
   }
 }
 
