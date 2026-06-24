@@ -104,51 +104,67 @@ export function TrainerView({
 
   return (
     <section className="trainer-layout" aria-label="Poker odds trainer">
-      <div className="prompt-panel">
-        <CardRow label="Opponent hand" cards={prompt.opponent} />
-        <CardRow label="Board" cards={prompt.board} />
-        <CardRow label="Player hand" cards={prompt.hero} />
-
-        {prompt.mode === "bet" ? (
-          <div className="bet-line" aria-label="Bet details">
-            <span>Pot: {formatMoney(prompt.pot)}</span>
-            <span>Call: {formatMoney(prompt.call)}</span>
+      <div className="table-stage" aria-label="Poker table">
+        <div className="table-felt">
+          <CardRow className="opponent-zone" label="Opponent hand" cards={prompt.opponent} />
+          <div className="board-zone">
+            <CardRow label="Board cards" cards={prompt.board} />
+            <div className="table-badges" aria-label="Table status">
+              {prompt.mode === "bet" ? (
+                <>
+                  <span>Pot {formatMoney(prompt.pot)}</span>
+                  <span>Call {formatMoney(prompt.call)}</span>
+                </>
+              ) : (
+                <span>Win chance ?</span>
+              )}
+            </div>
           </div>
-        ) : null}
-      </div>
-
-      <div className="answer-panel">
-        <h2>{prompt.mode === "odds" ? "What is the win chance?" : "What is the bet?"}</h2>
-        <div className="answer-grid">
-          {visibleAnswerChoices.map((choice) => {
-            const resultClass =
-              activeAnswer === null
-                ? ""
-                : choice.correct
-                  ? "answer-correct"
-                  : choice.label === activeAnswer.selected
-                    ? "answer-incorrect"
-                    : "";
-            const selectedClass =
-              activeAnswer !== null && choice.label === activeAnswer.selected
-                ? "answer-selected"
-                : "";
-
-            return (
-              <button
-                className={["answer-button", resultClass, selectedClass].filter(Boolean).join(" ")}
-                disabled={activeAnswer !== null}
-                key={choice.key}
-                onClick={() => answerPrompt(choice.label, choice.correct)}
-                type="button"
-              >
-                {choice.label}
-              </button>
-            );
-          })}
+          <CardRow className="hero-zone" label="Hero hand" cards={prompt.hero} />
         </div>
 
-        <div className="win-chance-details" aria-label="Win chance details" aria-live="polite">
+        <div className="action-pad" aria-label="Answer choices">
+          <h2>{prompt.mode === "odds" ? "What is the win chance?" : "What is the bet?"}</h2>
+          <div className="answer-grid">
+            {visibleAnswerChoices.map((choice) => {
+              const resultClass =
+                activeAnswer === null
+                  ? ""
+                  : choice.correct
+                    ? "answer-correct"
+                    : choice.label === activeAnswer.selected
+                      ? "answer-incorrect"
+                      : "";
+              const selectedClass =
+                activeAnswer !== null && choice.label === activeAnswer.selected
+                  ? "answer-selected"
+                  : "";
+
+              return (
+                <button
+                  className={["answer-button", resultClass, selectedClass].filter(Boolean).join(" ")}
+                  disabled={activeAnswer !== null}
+                  key={choice.key}
+                  onClick={() => answerPrompt(choice.label, choice.correct)}
+                  type="button"
+                >
+                  {choice.label}
+                </button>
+              );
+            })}
+          </div>
+          {activeAnswer !== null ? (
+            <button className="next-button" onClick={onNext} type="button">
+              Next
+            </button>
+          ) : null}
+        </div>
+
+        <div
+          className="feedback-strip win-chance-details"
+          aria-label="Win chance details"
+          aria-live="polite"
+        >
           {activeAnswer === null ? (
             null
           ) : (
@@ -224,9 +240,6 @@ export function TrainerView({
                   ) : null}
                 </>
               ) : null}
-              <button className="next-button" onClick={onNext} type="button">
-                Next
-              </button>
             </>
           )}
         </div>
@@ -235,9 +248,17 @@ export function TrainerView({
   );
 }
 
-function CardRow({ label, cards }: { label: string; cards: Prompt["hero"] }) {
+function CardRow({
+  label,
+  cards,
+  className,
+}: {
+  label: string;
+  cards: Prompt["hero"];
+  className?: string;
+}) {
   return (
-    <div className="card-row-wrap">
+    <div className={["card-row-wrap", className].filter(Boolean).join(" ")} aria-label={label}>
       <span className="section-label">{label}</span>
       <div className="card-row">
         {cards.map((card) => (

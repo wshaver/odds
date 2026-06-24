@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test, vi } from "vitest";
 
@@ -33,26 +33,22 @@ function expectedOddsCorrect(prompt: Prompt, selected: string): boolean {
 }
 
 describe("TrainerView", () => {
-  test("orders opponent hand, board, and player hand on the left", () => {
+  test("renders visible opponent, board, and hero cards inside the table stage", () => {
     const prompt = generatePrompt("odds", "TrainerLayoutOrder");
 
     render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
 
-    const board = screen.getByText("Board");
-    const opponent = screen.getByText("Opponent hand");
-    const player = screen.getByText("Player hand");
+    expect(screen.getByLabelText("Poker table")).toBeInTheDocument();
+    expect(screen.getByLabelText("Opponent hand")).toBeInTheDocument();
+    expect(screen.getByLabelText("Board cards")).toBeInTheDocument();
+    expect(screen.getByLabelText("Hero hand")).toBeInTheDocument();
+    expect(screen.getByLabelText("Answer choices")).toBeInTheDocument();
 
-    expect(
-      opponent.compareDocumentPosition(board) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(
-      board.compareDocumentPosition(player) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(screen.queryByText(/Pair|Two Pair|Trips|Straight|Flush|Full House/i)).not.toBeInTheDocument();
-
-    for (const card of prompt.opponent) {
+    for (const card of [...prompt.opponent, ...prompt.board, ...prompt.hero]) {
       expect(screen.getByLabelText(cardToString(card))).toBeInTheDocument();
     }
+
+    expect(screen.queryByText(/Pair|Two Pair|Trips|Straight|Flush|Full House/i)).not.toBeInTheDocument();
   });
 
   test("keeps answer feedback in the answer panel and filters choices after an incorrect answer", async () => {
@@ -128,10 +124,11 @@ describe("TrainerView", () => {
     expect(screen.getByText(/Remaining cards/i)).toHaveTextContent(
       String(outcomes.remaining),
     );
-    expect(screen.getAllByText(/Win chance/i)[1]).toHaveTextContent(
+    const details = screen.getByLabelText("Win chance details");
+    expect(within(details).getByText(/Win chance/i)).toHaveTextContent(
       formatPercent(outcomes.winProbability),
     );
-    expect(screen.getAllByText(/Win chance/i)[1]).toHaveTextContent(
+    expect(within(details).getByText(/Win chance/i)).toHaveTextContent(
       `${outcomes.win} / ${outcomes.remaining}`,
     );
     expect(
@@ -303,7 +300,7 @@ describe("TrainerView", () => {
 
     await user.click(screen.getByRole("button", { name: optionLabel(model.options[0]) }));
 
-    expect(screen.getAllByText(/Win chance/i)[1]).toHaveTextContent(
+    expect(within(screen.getByLabelText("Win chance details")).getByText(/Win chance/i)).toHaveTextContent(
       `${(outcomes.winProbability * 100).toFixed(1)}%`,
     );
   });
@@ -344,8 +341,8 @@ describe("TrainerView", () => {
 
     render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={onAnswered} />);
 
-    expect(screen.getByLabelText("Bet details")).toHaveTextContent(`Pot: ${formatMoney(prompt.pot)}`);
-    expect(screen.getByLabelText("Bet details")).toHaveTextContent(`Call: ${formatMoney(prompt.call)}`);
+    expect(screen.getByLabelText("Table status")).toHaveTextContent(`Pot ${formatMoney(prompt.pot)}`);
+    expect(screen.getByLabelText("Table status")).toHaveTextContent(`Call ${formatMoney(prompt.call)}`);
 
     await user.click(screen.getByRole("button", { name: "Call" }));
 
@@ -367,6 +364,15 @@ describe("TrainerView", () => {
       selected: "Call",
       correct: model.correctAction === "call",
     });
+  });
+
+  test("renders table badges for bet prompt pot and call values", () => {
+    const prompt = generatePrompt("bet", "TrainerBetBadges");
+
+    render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
+
+    expect(screen.getByLabelText("Table status")).toHaveTextContent(`Pot ${formatMoney(prompt.pot)}`);
+    expect(screen.getByLabelText("Table status")).toHaveTextContent(`Call ${formatMoney(prompt.call)}`);
   });
 
   test("does not call onAnswered again when clicking multiple odds answers after an answer", async () => {
