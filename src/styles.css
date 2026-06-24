@@ -85,10 +85,11 @@ button:disabled {
   background: rgba(255, 246, 221, 0.08);
   border: 1px solid rgba(213, 174, 98, 0.24);
   border-radius: 10px;
-  display: grid;
+  display: flex;
   flex: 0 0 auto;
+  flex-wrap: wrap;
   gap: 3px;
-  grid-template-columns: repeat(2, minmax(74px, 1fr));
+  max-width: min(100%, 360px);
   padding: 3px;
 }
 
@@ -96,6 +97,7 @@ button:disabled {
   background: transparent;
   border-color: transparent;
   color: #dfd1b5;
+  flex: 1 1 74px;
   font-weight: 800;
   min-height: 34px;
   min-width: 0;
@@ -491,7 +493,7 @@ button:disabled {
   font-size: 0.94rem;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1080px) {
   .table-felt {
     border-radius: 34px;
     display: grid;
@@ -560,7 +562,6 @@ button:disabled {
   }
 
   .mode-buttons {
-    grid-template-columns: 1fr 1fr;
     width: 100%;
   }
 
