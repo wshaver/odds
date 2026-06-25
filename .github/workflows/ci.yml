@@ -43,3 +43,38 @@ jobs:
             echo "- Tests: \`npm run test\` (vitest)"
             echo "- Build: \`npm run build\` (tsc + vite)"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  mutation:
+    name: Mutation testing (engine)
+    runs-on: ubuntu-latest
+    # Informational: surfaces test-suite gaps in the poker engine.
+    # Never blocks the PR — a low score or a Stryker hiccup must not turn CI red.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Stryker on the engine
+        run: npm run test:mutation 2>&1 | tee stryker.log
+
+      - name: Report mutation score
+        if: always()
+        run: |
+          clean=$(sed -E 's/\x1b\[[0-9;]*m//g' stryker.log)
+          score=$(printf '%s\n' "$clean" | awk -F'|' '/All files/ {gsub(/ /,"",$2); print $2; exit}')
+          {
+            echo "### Engine mutation score: ${score:-n/a}%"
+            echo ""
+            echo "Mutants that survived are spots where the test suite would not catch a change to the engine."
+            echo ""
+            echo '```'
+            printf '%s\n' "$clean" | grep -E '\|' | tail -n 12
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
