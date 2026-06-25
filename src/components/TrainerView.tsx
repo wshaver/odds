@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 
-import { enumerateNextCardOutcomes } from "../engine/enumerator";
+import { enumerateNextCardOutcomes, enumerateNextCardOutcomesFor } from "../engine/enumerator";
 import { maxCorrectCall, requiredEquity } from "../engine/potOdds";
 import { canonicalPromptKey } from "../prompts/hashRouter";
 import { getAnswerModel } from "../prompts/questionGenerator";
@@ -39,16 +39,29 @@ export function TrainerView({
   restoredAnswer = null,
 }: TrainerViewProps) {
   const answerModel = useMemo(
-    () => (prompt.mode === "odds" ? getAnswerModel(prompt) : getAnswerModel(prompt)),
+    () => getAnswerModel(prompt),
     [prompt],
   );
-  const outcomes = useMemo(() => enumerateNextCardOutcomes(prompt), [prompt]);
+  const outcomes = useMemo(
+    () =>
+      prompt.mode === "chase"
+        ? enumerateNextCardOutcomesFor({
+            subject: prompt.opponent,
+            opponent: prompt.hero,
+            board: prompt.board,
+          })
+        : enumerateNextCardOutcomes(prompt),
+    [prompt],
+  );
   const promptKey = useMemo(() => canonicalPromptKey(prompt), [prompt]);
   const betRequiredEquity = prompt.mode === "bet" ? requiredEquity(prompt.pot, prompt.call) : null;
   const betMaxCorrectCall =
     prompt.mode === "bet"
       ? maxCorrectCall({ pot: prompt.pot, winProbability: outcomes.winProbability })
       : null;
+  const chaseHighestCorrectCall =
+    answerModel.kind === "chase" ? answerModel.highestCorrectCall : null;
+  const chaseCorrectBet = answerModel.kind === "chase" ? answerModel.correctBet : null;
   const isGuaranteedWin = outcomes.win === outcomes.remaining;
   const displayedWinOuts = isGuaranteedWin ? 0 : outcomes.win;
   const hasWinningCards = !isGuaranteedWin && outcomes.winningCards.length > 0;
@@ -73,6 +86,14 @@ export function TrainerView({
           correct: label === correctLabel,
         };
       });
+    }
+
+    if (answerModel.kind === "chase") {
+      return answerModel.options.map((option) => ({
+        key: String(option),
+        label: formatMoney(option),
+        correct: option === answerModel.correctBet,
+      }));
     }
 
     return (["call", "fold"] as const).map((action) => ({
@@ -102,7 +123,7 @@ export function TrainerView({
           </div>
           <dl className="feedback-list">
             <div>
-              <dt>Win outs {displayedWinOuts}</dt>
+              <dt>{prompt.mode === "chase" ? "Biff win outs" : "Win outs"} {displayedWinOuts}</dt>
               <dd aria-hidden="true">{displayedWinOuts}</dd>
             </div>
             <div>
@@ -116,13 +137,17 @@ export function TrainerView({
             <div>
               {isGuaranteedWin ? (
                 <>
-                  <dt>Win chance {formatPercent(outcomes.winProbability)}</dt>
+                  <dt>
+                    {prompt.mode === "chase" ? "Biff win chance" : "Win chance"}{" "}
+                    {formatPercent(outcomes.winProbability)}
+                  </dt>
                   <dd aria-hidden="true">{formatPercent(outcomes.winProbability)}</dd>
                 </>
               ) : (
                 <>
                   <dt>
-                    Win chance {formatPercent(outcomes.winProbability)} ({outcomes.win} /{" "}
+                    {prompt.mode === "chase" ? "Biff win chance" : "Win chance"}{" "}
+                    {formatPercent(outcomes.winProbability)} ({outcomes.win} /{" "}
                     {outcomes.remaining})
                   </dt>
                   <dd aria-hidden="true">
@@ -142,6 +167,18 @@ export function TrainerView({
               <div>
                 <dt>Max correct call {formatChipAmount(betMaxCorrectCall)}</dt>
                 <dd aria-hidden="true">{formatChipAmount(betMaxCorrectCall)}</dd>
+              </div>
+            ) : null}
+            {chaseHighestCorrectCall !== null ? (
+              <div>
+                <dt>Highest correct call {formatChipAmount(chaseHighestCorrectCall)}</dt>
+                <dd aria-hidden="true">{formatChipAmount(chaseHighestCorrectCall)}</dd>
+              </div>
+            ) : null}
+            {chaseCorrectBet !== null ? (
+              <div>
+                <dt>Lowest chase-out bet {formatChipAmount(chaseCorrectBet)}</dt>
+                <dd aria-hidden="true">{formatChipAmount(chaseCorrectBet)}</dd>
               </div>
             ) : null}
           </dl>
@@ -204,12 +241,15 @@ export function TrainerView({
               {prompt.mode === "bet" ? (
                 <span>Pot {formatMoney(prompt.pot)}</span>
               ) : null}
+              {prompt.mode === "chase" ? (
+                <span>Pot {formatMoney(prompt.pot)}</span>
+              ) : null}
             </div>
           </div>
           <CardRow className="hero-zone" label="You" cards={prompt.hero} />
         </div>
         <section className="action-pad" aria-label="Answer choices">
-          <h2>{prompt.mode === "odds" ? "What is the win chance?" : "What is the bet?"}</h2>
+          <h2>{questionText(prompt.mode)}</h2>
           <div className="answer-grid">
             {visibleAnswerChoices.map((choice) => {
               const resultClass =
@@ -286,6 +326,16 @@ function formatPercent(value: number): string {
 
 function formatOptionPercent(value: number): string {
   return `${Math.round(value * 100)}%`;
+}
+
+function questionText(mode: Prompt["mode"]): string {
+  if (mode === "odds") {
+    return "What is the win chance?";
+  }
+  if (mode === "chase") {
+    return "What bet chases Biff out?";
+  }
+  return "What is the bet?";
 }
 
 function formatChipAmount(value: number): string {

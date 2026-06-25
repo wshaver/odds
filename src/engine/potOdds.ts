@@ -35,6 +35,14 @@ export function maxCorrectCall(input: MaxCorrectCallInput): number {
   return Math.floor(maxCall + Number.EPSILON * Math.max(1, Math.abs(maxCall)) * 4);
 }
 
+export function chaseOutBet(input: MaxCorrectCallInput): number | null {
+  if (input.winProbability === 1) {
+    return null;
+  }
+
+  return maxCorrectCall(input) + 1;
+}
+
 export function shouldCall(input: ShouldCallInput): boolean {
   return input.winProbability >= requiredEquity(input.pot, input.call);
 }

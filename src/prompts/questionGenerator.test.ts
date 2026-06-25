@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import { cardToString } from "../engine/cards";
 import { enumerateNextCardOutcomes } from "../engine/enumerator";
-import { requiredEquity, shouldCall } from "../engine/potOdds";
+import { chaseOutBet, requiredEquity, shouldCall } from "../engine/potOdds";
 import { parsePromptHash, promptToHash } from "./hashRouter";
 import { COMMON_WIN_CHANCE_OPTIONS } from "./commonWinChanceOptions";
 import { generatePrompt, getAnswerModel } from "./questionGenerator";
@@ -40,8 +40,21 @@ describe("questionGenerator", () => {
     expect(parsePromptHash(promptToHash(prompt))).toEqual(prompt);
   });
 
+  test("generates valid chase prompts with 4-card board and positive whole-dollar pot", () => {
+    const prompt = generatePrompt("chase", "Chase42");
+
+    expect(prompt.mode).toBe("chase");
+    expect(prompt.hero).toHaveLength(2);
+    expect(prompt.opponent).toHaveLength(2);
+    expect(prompt.board).toHaveLength(4);
+    expect(prompt.seed).toMatch(/^[A-Za-z0-9]+$/);
+    expect(prompt.pot).toBeGreaterThan(0);
+    expect(Number.isInteger(prompt.pot)).toBe(true);
+    expect(parsePromptHash(promptToHash(prompt))).toEqual(prompt);
+  });
+
   test("generated prompts have no duplicate cards", () => {
-    for (const mode of ["odds", "bet"] as const) {
+    for (const mode of ["odds", "bet", "chase"] as const) {
       const prompt = generatePrompt(mode, `NoDupes${mode}`);
       const ids = cardIds(prompt);
 
@@ -60,6 +73,26 @@ describe("questionGenerator", () => {
           outcomes.remaining,
         );
       }
+    }
+  });
+
+  test("generated chase prompts avoid useless chase-out thresholds", () => {
+    for (let index = 0; index < 200; index += 1) {
+      const prompt = generatePrompt("chase", `UsefulChase${index}`);
+      const biffOutcomes = enumerateNextCardOutcomes({
+        hero: prompt.opponent,
+        opponent: prompt.hero,
+        board: prompt.board,
+      });
+      const correctBet = chaseOutBet({
+        pot: prompt.pot,
+        winProbability: biffOutcomes.winProbability,
+      });
+
+      expect(biffOutcomes.win, prompt.seed).toBeGreaterThan(0);
+      expect(biffOutcomes.win, prompt.seed).toBeLessThan(biffOutcomes.remaining);
+      expect(correctBet, prompt.seed).not.toBeNull();
+      expect(correctBet ?? 0, prompt.seed).toBeGreaterThan(1);
     }
   });
 
@@ -126,5 +159,45 @@ describe("questionGenerator", () => {
         ? "call"
         : "fold",
     );
+  });
+
+  test("chase answer model returns the lowest bad-call bet and nearby seeded options", () => {
+    const prompt = generatePrompt("chase", "ChaseAnswer99");
+    const answer = getAnswerModel(prompt);
+    const biffOutcomes = enumerateNextCardOutcomes({
+      hero: prompt.opponent,
+      opponent: prompt.hero,
+      board: prompt.board,
+    });
+    const correctBet = chaseOutBet({
+      pot: prompt.pot,
+      winProbability: biffOutcomes.winProbability,
+    });
+
+    expect(answer.kind).toBe("chase");
+    expect(answer.correctBet).toBe(correctBet);
+    expect(answer.highestCorrectCall).toBe((correctBet ?? 1) - 1);
+    expect(answer.biffWinProbability).toBe(biffOutcomes.winProbability);
+    expect(answer.options).toHaveLength(3);
+    expect(answer.options).toContain(answer.correctBet);
+    expect(new Set(answer.options).size).toBe(3);
+    expect(answer.options.every((option) => Number.isInteger(option) && option > 0)).toBe(true);
+    expect(getAnswerModel(prompt)).toEqual(answer);
+  });
+
+  test("chase options can place the correct amount lowest, middle, or highest", () => {
+    const ranks = new Set<number>();
+
+    for (let index = 0; index < 60; index += 1) {
+      const prompt = generatePrompt("chase", `ChaseRank${index}`);
+      const answer = getAnswerModel(prompt);
+      if (answer.kind !== "chase") {
+        throw new Error("Expected chase answer");
+      }
+      const sorted = [...answer.options].sort((left, right) => left - right);
+      ranks.add(sorted.indexOf(answer.correctBet));
+    }
+
+    expect(ranks).toEqual(new Set([0, 1, 2]));
   });
 });

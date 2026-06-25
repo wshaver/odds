@@ -28,8 +28,10 @@ describe("App", () => {
     expect(screen.getByRole("navigation", { name: "Training modes" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Odds" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "Bet" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Chase" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByLabelText("Mode progress")).toHaveTextContent("Odds");
     expect(screen.getByLabelText("Mode progress")).toHaveTextContent("Bet");
+    expect(screen.getByLabelText("Mode progress")).toHaveTextContent("Chase");
   });
 
   test("restores answered prompt feedback from profile storage for the current hash", () => {

@@ -7,6 +7,12 @@ export type EnumerateNextCardInput = {
   board: Card[];
 };
 
+export type EnumerateNextCardForInput = {
+  subject: Card[];
+  opponent: Card[];
+  board: Card[];
+};
+
 export type EnumerationResult = {
   remaining: number;
   win: number;
@@ -17,7 +23,15 @@ export type EnumerationResult = {
 };
 
 export function enumerateNextCardOutcomes(input: EnumerateNextCardInput): EnumerationResult {
-  if (input.hero.length !== 2) {
+  return enumerateNextCardOutcomesFor({
+    subject: input.hero,
+    opponent: input.opponent,
+    board: input.board,
+  });
+}
+
+export function enumerateNextCardOutcomesFor(input: EnumerateNextCardForInput): EnumerationResult {
+  if (input.subject.length !== 2) {
     throw new Error("Hero must have exactly 2 cards");
   }
   if (input.opponent.length !== 2) {
@@ -27,7 +41,7 @@ export function enumerateNextCardOutcomes(input: EnumerateNextCardInput): Enumer
     throw new Error("Board must have 3 or 4 cards");
   }
 
-  const knownCards = [...input.hero, ...input.opponent, ...input.board];
+  const knownCards = [...input.subject, ...input.opponent, ...input.board];
   const nextCards = removeKnownCards(buildDeck(), knownCards);
   const result: EnumerationResult = {
     remaining: nextCards.length,
@@ -40,7 +54,7 @@ export function enumerateNextCardOutcomes(input: EnumerateNextCardInput): Enumer
 
   for (const nextCard of nextCards) {
     const board = [...input.board, nextCard];
-    const comparison = compareBestHands([...input.hero, ...board], [...input.opponent, ...board]);
+    const comparison = compareBestHands([...input.subject, ...board], [...input.opponent, ...board]);
     if (comparison > 0) {
       result.win += 1;
       result.winningCards.push(nextCard);

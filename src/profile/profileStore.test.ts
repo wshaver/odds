@@ -23,13 +23,19 @@ describe("profileStore", () => {
           currentStreak: 0,
           bestStreak: 0,
         },
-        whatsTheBet: {
-          answered: 0,
-          correct: 0,
-          currentStreak: 0,
-          bestStreak: 0,
+          whatsTheBet: {
+            answered: 0,
+            correct: 0,
+            currentStreak: 0,
+            bestStreak: 0,
+          },
+          chaseOut: {
+            answered: 0,
+            correct: 0,
+            currentStreak: 0,
+            bestStreak: 0,
+          },
         },
-      },
       weakSpots: {},
       answeredPrompts: {},
       settings: {},
@@ -61,6 +67,25 @@ describe("profileStore", () => {
     expect(Object.keys(second.profile.answeredPrompts)).toEqual([
       "mode=odds&hero=6s7s&opponent=TdTc&board=8s9dKh&seed=k4p9",
     ]);
+  });
+
+  test("recordAnswer scores chase answers in the chaseOut bucket", () => {
+    const result = recordAnswer({
+      key: "mode=chase&hero=6s7s&opponent=TdTc&board=8s9dKh2s&pot=120&seed=k4p9",
+      mode: "chase",
+      selected: "$31",
+      correct: true,
+    });
+
+    expect(result.scored).toBe(true);
+    expect(result.profile.modes.chaseOut).toEqual({
+      answered: 1,
+      correct: 1,
+      currentStreak: 1,
+      bestStreak: 1,
+    });
+    expect(result.profile.modes.tellMeTheOdds.answered).toBe(0);
+    expect(result.profile.modes.whatsTheBet.answered).toBe(0);
   });
 
   test("can reset profile data", () => {
@@ -137,6 +162,39 @@ describe("profileStore", () => {
     });
   });
 
+  test("loadProfile adds default chaseOut stats to old version-1 profiles", () => {
+    localStorage.setItem(
+      "odds.playerProfile.v1",
+      JSON.stringify({
+        version: 1,
+        modes: {
+          tellMeTheOdds: {
+            answered: 2,
+            correct: 1,
+            currentStreak: 0,
+            bestStreak: 1,
+          },
+          whatsTheBet: {
+            answered: 3,
+            correct: 2,
+            currentStreak: 2,
+            bestStreak: 2,
+          },
+        },
+        weakSpots: {},
+        answeredPrompts: {},
+        settings: {},
+      }),
+    );
+
+    expect(loadProfile().modes.chaseOut).toEqual({
+      answered: 0,
+      correct: 0,
+      currentStreak: 0,
+      bestStreak: 0,
+    });
+  });
+
   test("loadProfile returns default profile when localStorage.getItem throws", () => {
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
       throw new Error("storage unavailable");
@@ -186,6 +244,12 @@ function expectDefaultProfile(profile: unknown) {
         bestStreak: 0,
       },
       whatsTheBet: {
+        answered: 0,
+        correct: 0,
+        currentStreak: 0,
+        bestStreak: 0,
+      },
+      chaseOut: {
         answered: 0,
         correct: 0,
         currentStreak: 0,

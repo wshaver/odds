@@ -1,6 +1,6 @@
 import type { Card } from "../engine/cards";
 
-export type PromptMode = "odds" | "bet";
+export type PromptMode = "odds" | "bet" | "chase";
 
 export type BasePrompt = {
   mode: PromptMode;
@@ -20,4 +20,9 @@ export type BetPrompt = BasePrompt & {
   call: number;
 };
 
-export type Prompt = OddsPrompt | BetPrompt;
+export type ChasePrompt = BasePrompt & {
+  mode: "chase";
+  pot: number;
+};
+
+export type Prompt = OddsPrompt | BetPrompt | ChasePrompt;

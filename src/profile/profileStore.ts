@@ -21,6 +21,7 @@ export type PlayerProfile = {
   modes: {
     tellMeTheOdds: ModeStats;
     whatsTheBet: ModeStats;
+    chaseOut: ModeStats;
   };
   weakSpots: Record<string, { answered: number; correct: number }>;
   answeredPrompts: Record<string, AnsweredPrompt>;
@@ -106,6 +107,7 @@ function createDefaultProfile(): PlayerProfile {
     modes: {
       tellMeTheOdds: createDefaultModeStats(),
       whatsTheBet: createDefaultModeStats(),
+      chaseOut: createDefaultModeStats(),
     },
     weakSpots: {},
     answeredPrompts: {},
@@ -134,6 +136,9 @@ function normalizeProfile(profile: Partial<PlayerProfile>): PlayerProfile {
       whatsTheBet: isModeStats(profile.modes?.whatsTheBet)
         ? profile.modes.whatsTheBet
         : defaults.modes.whatsTheBet,
+      chaseOut: isModeStats(profile.modes?.chaseOut)
+        ? profile.modes.chaseOut
+        : defaults.modes.chaseOut,
     },
     weakSpots: isRecord(profile.weakSpots) ? profile.weakSpots : defaults.weakSpots,
     answeredPrompts: isRecord(profile.answeredPrompts)
@@ -161,5 +166,11 @@ function isRecord(value: unknown): value is Record<string, never> {
 }
 
 function modeStatsKey(mode: PromptMode): keyof PlayerProfile["modes"] {
-  return mode === "odds" ? "tellMeTheOdds" : "whatsTheBet";
+  if (mode === "odds") {
+    return "tellMeTheOdds";
+  }
+  if (mode === "chase") {
+    return "chaseOut";
+  }
+  return "whatsTheBet";
 }

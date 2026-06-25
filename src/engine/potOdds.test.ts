@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { maxCorrectCall, requiredEquity, shouldCall } from "./potOdds";
+import { chaseOutBet, maxCorrectCall, requiredEquity, shouldCall } from "./potOdds";
 
 describe("shouldCall", () => {
   it("returns true when win probability meets required equity", () => {
@@ -27,5 +27,21 @@ describe("maxCorrectCall", () => {
 
   it("does not round exact integer call amounts down due to floating point drift", () => {
     expect(maxCorrectCall({ pot: 180, winProbability: 41 / 44 })).toBe(2460);
+  });
+});
+
+describe("chaseOutBet", () => {
+  it("returns the smallest whole-dollar bet that makes the call mathematically wrong", () => {
+    expect(chaseOutBet({ pot: 100, winProbability: 0.2 })).toBe(26);
+    expect(shouldCall({ pot: 100, call: 25, winProbability: 0.2 })).toBe(true);
+    expect(shouldCall({ pot: 100, call: 26, winProbability: 0.2 })).toBe(false);
+  });
+
+  it("uses the next dollar after an exact break-even call", () => {
+    expect(chaseOutBet({ pot: 120, winProbability: 0.2 })).toBe(31);
+  });
+
+  it("returns null when no finite bet can chase out a guaranteed winner", () => {
+    expect(chaseOutBet({ pot: 120, winProbability: 1 })).toBeNull();
   });
 });

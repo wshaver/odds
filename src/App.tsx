@@ -81,6 +81,10 @@ export function App() {
               Bet {profile.modes.whatsTheBet.correct}/
               {profile.modes.whatsTheBet.answered}
             </span>
+            <span>
+              Chase {profile.modes.chaseOut.correct}/
+              {profile.modes.chaseOut.answered}
+            </span>
           </div>
         </div>
         <nav className="mode-buttons" aria-label="Training modes">
@@ -97,6 +101,13 @@ export function App() {
             type="button"
           >
             Bet
+          </button>
+          <button
+            aria-pressed={prompt.mode === "chase"}
+            onClick={() => switchMode("chase")}
+            type="button"
+          >
+            Chase
           </button>
         </nav>
       </header>

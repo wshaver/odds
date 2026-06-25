@@ -1,9 +1,9 @@
 import { buildDeck, type Card } from "../engine/cards";
-import { enumerateNextCardOutcomes } from "../engine/enumerator";
-import { requiredEquity, shouldCall } from "../engine/potOdds";
+import { enumerateNextCardOutcomes, enumerateNextCardOutcomesFor } from "../engine/enumerator";
+import { chaseOutBet, maxCorrectCall, requiredEquity, shouldCall } from "../engine/potOdds";
 import { COMMON_WIN_CHANCE_OPTIONS } from "./commonWinChanceOptions";
 import { createSeededRandom, shuffle } from "./seededRandom";
-import type { BetPrompt, OddsPrompt, Prompt, PromptMode } from "./types";
+import type { BetPrompt, ChasePrompt, OddsPrompt, Prompt, PromptMode } from "./types";
 
 export type OddsAnswerModel = {
   kind: "odds";
@@ -17,7 +17,15 @@ export type BetAnswerModel = {
   requiredEquity: number;
 };
 
-export type AnswerModel = OddsAnswerModel | BetAnswerModel;
+export type ChaseAnswerModel = {
+  kind: "chase";
+  correctBet: number;
+  highestCorrectCall: number;
+  biffWinProbability: number;
+  options: number[];
+};
+
+export type AnswerModel = OddsAnswerModel | BetAnswerModel | ChaseAnswerModel;
 
 const SEED_ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -31,17 +39,24 @@ export function randomSeed(): string {
 
 export function generatePrompt(mode: "odds", seed?: string): OddsPrompt;
 export function generatePrompt(mode: "bet", seed?: string): BetPrompt;
+export function generatePrompt(mode: "chase", seed?: string): ChasePrompt;
 export function generatePrompt(mode: PromptMode, seed?: string): Prompt;
 export function generatePrompt(mode: PromptMode, seed = randomSeed()): Prompt {
   for (let attempt = 0; attempt < 100; attempt += 1) {
     const prompt = buildPrompt(mode, seedForAttempt(seed, attempt));
-    const outcomes = enumerateNextCardOutcomes(prompt);
-    if (outcomes.win > 0 && outcomes.win < outcomes.remaining) {
+    if (isUsefulGeneratedPrompt(prompt)) {
       return prompt;
     }
   }
 
-  return buildPrompt(mode, seedForAttempt(seed, 100));
+  for (let attempt = 100; attempt < 1000; attempt += 1) {
+    const prompt = buildPrompt(mode, seedForAttempt(seed, attempt));
+    if (isUsefulGeneratedPrompt(prompt)) {
+      return prompt;
+    }
+  }
+
+  return buildPrompt(mode, seedForAttempt("ChaseFixture", 1));
 }
 
 function buildPrompt(mode: PromptMode, seed: string): Prompt {
@@ -50,7 +65,7 @@ function buildPrompt(mode: PromptMode, seed: string): Prompt {
   const cards = shuffle(buildDeck(), `${compactSeed}:cards`);
   const hero = cards.slice(0, 2);
   const opponent = cards.slice(2, 4);
-  const boardLength = mode === "bet" || random() < 0.5 ? 4 : 3;
+  const boardLength = mode === "bet" || mode === "chase" || random() < 0.5 ? 4 : 3;
   const board = cards.slice(4, 4 + boardLength);
 
   if (mode === "odds") {
@@ -64,6 +79,18 @@ function buildPrompt(mode: PromptMode, seed: string): Prompt {
   }
 
   const pot = positiveChipAmount(random, 4, 40, 5);
+
+  if (mode === "chase") {
+    return {
+      mode,
+      hero,
+      opponent,
+      board,
+      pot: positiveChipAmount(random, 20, 160, 1),
+      seed: compactSeed,
+    } satisfies ChasePrompt;
+  }
+
   const call = positiveChipAmount(random, 1, 16, 5);
 
   return {
@@ -89,6 +116,8 @@ function seedForAttempt(seed: string, attempt: number): string {
 
 export function getAnswerModel(prompt: OddsPrompt): OddsAnswerModel;
 export function getAnswerModel(prompt: BetPrompt): BetAnswerModel;
+export function getAnswerModel(prompt: ChasePrompt): ChaseAnswerModel;
+export function getAnswerModel(prompt: Prompt): AnswerModel;
 export function getAnswerModel(prompt: Prompt): AnswerModel {
   const correctProbability = enumerateNextCardOutcomes(prompt).winProbability;
 
@@ -97,6 +126,33 @@ export function getAnswerModel(prompt: Prompt): AnswerModel {
       kind: "odds",
       correctProbability,
       options: oddsOptions(correctProbability, prompt.seed),
+    };
+  }
+
+  if (prompt.mode === "chase") {
+    const outcomes = enumerateNextCardOutcomesFor({
+      subject: prompt.opponent,
+      opponent: prompt.hero,
+      board: prompt.board,
+    });
+    const correctBet = chaseOutBet({
+      pot: prompt.pot,
+      winProbability: outcomes.winProbability,
+    });
+
+    if (correctBet === null) {
+      throw new Error("Chase prompt has no finite chase-out bet");
+    }
+
+    return {
+      kind: "chase",
+      correctBet,
+      highestCorrectCall: maxCorrectCall({
+        pot: prompt.pot,
+        winProbability: outcomes.winProbability,
+      }),
+      biffWinProbability: outcomes.winProbability,
+      options: chaseOptions(correctBet, prompt.seed),
     };
   }
 
@@ -122,7 +178,35 @@ export function promptSignature(prompt: Prompt): string {
     return `odds:${cards}:${prompt.seed}`;
   }
 
+  if (prompt.mode === "chase") {
+    return `chase:${cards}:${prompt.pot}:${prompt.seed}`;
+  }
+
   return `bet:${cards}:${prompt.pot}:${prompt.call}:${prompt.seed}`;
+}
+
+function isUsefulGeneratedPrompt(prompt: Prompt): boolean {
+  if (prompt.mode !== "chase") {
+    const outcomes = enumerateNextCardOutcomes(prompt);
+    return outcomes.win > 0 && outcomes.win < outcomes.remaining;
+  }
+
+  const biffOutcomes = enumerateNextCardOutcomesFor({
+    subject: prompt.opponent,
+    opponent: prompt.hero,
+    board: prompt.board,
+  });
+  const correctBet = chaseOutBet({
+    pot: prompt.pot,
+    winProbability: biffOutcomes.winProbability,
+  });
+
+  return (
+    biffOutcomes.win > 0 &&
+    biffOutcomes.win < biffOutcomes.remaining &&
+    correctBet !== null &&
+    correctBet > 1
+  );
 }
 
 function oddsOptions(correctProbability: number, seed: string): number[] {
@@ -143,6 +227,40 @@ function oddsOptions(correctProbability: number, seed: string): number[] {
   }
 
   return shuffle([...options], `${seed}:odds-options-order`);
+}
+
+function chaseOptions(correctBet: number, seed: string): number[] {
+  const random = createSeededRandom(`${seed}:chase-options`);
+  const rankPattern = seed.charCodeAt(seed.length - 1) % 3;
+  const nearStep = Math.max(1, Math.round(correctBet * (0.15 + random() * 0.1)));
+  const farStep = Math.max(nearStep + 1, Math.round(correctBet * (0.3 + random() * 0.15)));
+  const options = new Set<number>();
+
+  if (rankPattern === 0) {
+    addPositiveOptions(options, [correctBet, correctBet + nearStep, correctBet + farStep]);
+  } else if (rankPattern === 1) {
+    addPositiveOptions(options, [correctBet - nearStep, correctBet, correctBet + nearStep]);
+  } else {
+    addPositiveOptions(options, [correctBet - farStep, correctBet - nearStep, correctBet]);
+  }
+
+  for (let offset = 1; options.size < 3; offset += 1) {
+    addPositiveOptions(options, [
+      correctBet - offset,
+      correctBet + offset,
+      correctBet + nearStep + offset,
+    ]);
+  }
+
+  return shuffle([...options], `${seed}:chase-options-order`);
+}
+
+function addPositiveOptions(options: Set<number>, values: number[]): void {
+  for (const value of values) {
+    if (value > 0) {
+      options.add(value);
+    }
+  }
 }
 
 function roundProbability(value: number): number {

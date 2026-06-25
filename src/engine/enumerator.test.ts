@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseCardList } from "./cards";
-import { enumerateNextCardOutcomes } from "./enumerator";
+import { enumerateNextCardOutcomes, enumerateNextCardOutcomesFor } from "./enumerator";
 import { buildDeck, removeKnownCards } from "./cards";
 
 describe("enumerateNextCardOutcomes", () => {
@@ -113,5 +113,22 @@ describe("enumerateNextCardOutcomes", () => {
         board: parseCardList("2s7s"),
       }),
     ).toThrow("Board must have 3 or 4 cards");
+  });
+});
+
+describe("enumerateNextCardOutcomesFor", () => {
+  it("can count Biff's winning river cards from Biff's point of view", () => {
+    const result = enumerateNextCardOutcomesFor({
+      subject: parseCardList("TdTc"),
+      opponent: parseCardList("Js8d"),
+      board: parseCardList("2s3d4h9c"),
+    });
+
+    expect(result.remaining).toBe(44);
+    expect(result.winningCards).not.toContainEqual(parseCardList("Jc")[0]);
+    expect(result.win).toBe(41);
+    expect(result.push).toBe(0);
+    expect(result.miss).toBe(3);
+    expect(result.winProbability).toBe(41 / 44);
   });
 });

@@ -4,7 +4,7 @@ import { describe, expect, test, vi } from "vitest";
 
 import { cardToString, parseCardList } from "../engine/cards";
 import { enumerateNextCardOutcomes } from "../engine/enumerator";
-import { maxCorrectCall } from "../engine/potOdds";
+import { chaseOutBet, maxCorrectCall } from "../engine/potOdds";
 import { canonicalPromptKey } from "../prompts/hashRouter";
 import { generatePrompt, getAnswerModel } from "../prompts/questionGenerator";
 import type { Prompt } from "../prompts/types";
@@ -389,6 +389,52 @@ describe("TrainerView", () => {
     expect(screen.getByLabelText("Biff action")).toHaveTextContent(`Bet ${formatMoney(prompt.call)}`);
   });
 
+  test("answers a chase prompt with dollar options and shows Biff-specific feedback", async () => {
+    const user = userEvent.setup();
+    const prompt = generatePrompt("chase", "TrainerChase1");
+    const model = getAnswerModel(prompt);
+    if (model.kind !== "chase") {
+      throw new Error("Expected chase prompt");
+    }
+    const biffOutcomes = enumerateNextCardOutcomes({
+      hero: prompt.opponent,
+      opponent: prompt.hero,
+      board: prompt.board,
+    });
+    const correctBet = chaseOutBet({
+      pot: prompt.pot,
+      winProbability: biffOutcomes.winProbability,
+    });
+    const onAnswered = vi.fn();
+
+    render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={onAnswered} />);
+
+    expect(screen.getByRole("heading", { name: "What bet chases Biff out?" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Table status")).toHaveTextContent(`Pot ${formatMoney(prompt.pot)}`);
+    for (const option of model.options) {
+      expect(screen.getByRole("button", { name: formatMoney(option) })).toBeInTheDocument();
+    }
+
+    await user.click(screen.getByRole("button", { name: formatMoney(model.options[0]) }));
+
+    expect(screen.getByText(/Biff win outs/i)).toHaveTextContent(String(biffOutcomes.win));
+    expect(screen.getByText(/Biff win chance/i)).toHaveTextContent(
+      formatPercent(biffOutcomes.winProbability),
+    );
+    expect(screen.getByText(/Highest correct call/i)).toHaveTextContent(
+      formatMoney(model.highestCorrectCall),
+    );
+    expect(screen.getByText(/Lowest chase-out bet/i)).toHaveTextContent(
+      formatMoney(correctBet ?? 0),
+    );
+    expect(screen.getByText(/Pushes are neutral and do not count as wins/i)).toBeInTheDocument();
+    expect(onAnswered).toHaveBeenCalledWith({
+      key: canonicalPromptKey(prompt),
+      selected: formatMoney(model.options[0]),
+      correct: model.options[0] === model.correctBet,
+    });
+  });
+
   test("does not call onAnswered again when clicking multiple odds answers after an answer", async () => {
     const user = userEvent.setup();
     const prompt = generatePrompt("odds", "TrainerOddsLock");
@@ -423,6 +469,27 @@ describe("TrainerView", () => {
     render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={onAnswered} />);
 
     await user.click(screen.getByRole("button", { name: firstAction }));
+    for (const button of screen.getAllByRole("button")) {
+      if (button.classList.contains("answer-button")) {
+        await user.click(button);
+      }
+    }
+
+    expect(onAnswered).toHaveBeenCalledTimes(1);
+  });
+
+  test("does not call onAnswered again when clicking multiple chase answers after an answer", async () => {
+    const user = userEvent.setup();
+    const prompt = generatePrompt("chase", "TrainerChaseLock");
+    const model = getAnswerModel(prompt);
+    if (model.kind !== "chase") {
+      throw new Error("Expected chase prompt");
+    }
+    const onAnswered = vi.fn();
+
+    render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={onAnswered} />);
+
+    await user.click(screen.getByRole("button", { name: formatMoney(model.options[0]) }));
     for (const button of screen.getAllByRole("button")) {
       if (button.classList.contains("answer-button")) {
         await user.click(button);

@@ -1,5 +1,5 @@
 import { cardToString, parseCardList, type Card } from "../engine/cards";
-import type { BetPrompt, OddsPrompt, Prompt, PromptMode } from "./types";
+import type { BetPrompt, ChasePrompt, OddsPrompt, Prompt, PromptMode } from "./types";
 
 export function parsePromptHash(hash: string): Prompt {
   const match = hash.match(/^#\/([^?]+)\?(.*)$/);
@@ -24,6 +24,17 @@ export function parsePromptHash(hash: string): Prompt {
     return { mode, hero, opponent, board, seed } satisfies OddsPrompt;
   }
 
+  if (mode === "chase") {
+    return {
+      mode,
+      hero,
+      opponent,
+      board,
+      pot: parsePositiveWholeDollar(requireParam(params, "pot"), "Pot"),
+      seed,
+    } satisfies ChasePrompt;
+  }
+
   return {
     mode,
     hero,
@@ -41,6 +52,16 @@ export function promptToHash(prompt: Prompt): string {
       ["hero", cardsToString(prompt.hero)],
       ["opponent", cardsToString(prompt.opponent)],
       ["board", cardsToString(prompt.board)],
+      ["seed", prompt.seed],
+    ])}`;
+  }
+
+  if (prompt.mode === "chase") {
+    return `#/chase?${serializeParams([
+      ["hero", cardsToString(prompt.hero)],
+      ["opponent", cardsToString(prompt.opponent)],
+      ["board", cardsToString(prompt.board)],
+      ["pot", String(prompt.pot)],
       ["seed", prompt.seed],
     ])}`;
   }
@@ -66,6 +87,17 @@ export function canonicalPromptKey(prompt: Prompt): string {
     ]);
   }
 
+  if (prompt.mode === "chase") {
+    return serializeParams([
+      ["mode", "chase"],
+      ["hero", cardsToString(prompt.hero)],
+      ["opponent", cardsToString(prompt.opponent)],
+      ["board", cardsToString(prompt.board)],
+      ["pot", String(prompt.pot)],
+      ["seed", prompt.seed],
+    ]);
+  }
+
   return serializeParams([
     ["mode", "bet"],
     ["hero", cardsToString(prompt.hero)],
@@ -78,7 +110,7 @@ export function canonicalPromptKey(prompt: Prompt): string {
 }
 
 function parseMode(value: string): PromptMode {
-  if (value === "odds" || value === "bet") {
+  if (value === "odds" || value === "bet" || value === "chase") {
     return value;
   }
 
@@ -96,6 +128,10 @@ function requireParam(params: URLSearchParams, key: string): string {
 function knownParamsForMode(mode: PromptMode): string[] {
   if (mode === "odds") {
     return ["hero", "opponent", "board", "seed"];
+  }
+
+  if (mode === "chase") {
+    return ["hero", "opponent", "board", "pot", "seed"];
   }
 
   return ["hero", "opponent", "board", "pot", "call", "seed"];
@@ -137,6 +173,10 @@ function validateBoard(mode: PromptMode, board: Card[]): void {
   if (mode === "bet" && board.length !== 4) {
     throw new Error("Bet mode requires exactly 4 board cards");
   }
+
+  if (mode === "chase" && board.length !== 4) {
+    throw new Error("Chase mode requires exactly 4 board cards");
+  }
 }
 
 function validateNoDuplicateCards(cards: Card[]): void {
@@ -156,6 +196,14 @@ function parsePositiveNumber(value: string, label: "Pot" | "Call"): number {
     throw new Error(`${label} must be positive`);
   }
 
+  return parsed;
+}
+
+function parsePositiveWholeDollar(value: string, label: "Pot"): number {
+  const parsed = parsePositiveNumber(value, label);
+  if (!Number.isInteger(parsed)) {
+    throw new Error(`${label} must be a positive whole dollar amount`);
+  }
   return parsed;
 }
 
