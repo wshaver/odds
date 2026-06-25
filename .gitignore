@@ -1,6 +1,8 @@
 .worktrees/
 node_modules/
 dist/
+.stryker-tmp/
+reports/
 *.tsbuildinfo
 vite.config.js
 vite.config.d.ts

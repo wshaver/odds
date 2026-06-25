@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:mutation": "stryker run",
     "generate:win-chances": "vite-node scripts/generate-common-win-chance-options.ts"
   },
   "dependencies": {
@@ -15,12 +16,14 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^5.0.0",
+    "@stryker-mutator/core": "^9.6.1",
+    "@stryker-mutator/vitest-runner": "^9.6.1",
     "@testing-library/jest-dom": "^6.4.0",
     "@testing-library/react": "^16.0.0",
     "@testing-library/user-event": "^14.5.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^5.0.0",
     "jsdom": "^25.0.0",
     "typescript": "^5.5.0",
     "vite": "^7.0.0",
