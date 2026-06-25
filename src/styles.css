@@ -154,8 +154,7 @@ button:disabled {
     linear-gradient(145deg, #1f8d58 0%, #11643e 46%, #0a3f2b 100%);
   box-shadow:
     inset 0 0 0 5px rgba(218, 166, 83, 0.46),
-    inset 0 0 52px rgba(1, 20, 13, 0.7),
-    0 22px 0 #20140c;
+    inset 0 0 52px rgba(1, 20, 13, 0.7);
 }
 
 .table-felt::before {
