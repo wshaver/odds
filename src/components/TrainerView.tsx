@@ -229,21 +229,24 @@ export function TrainerView({
       <section className="table-stage" aria-label="Poker table">
         <div className="table-felt">
           <CardRow className="opponent-zone" label="Biff" cards={prompt.opponent}>
-            {prompt.mode === "bet" ? (
-              <div className="table-badges opponent-action" role="group" aria-label="Biff action">
+            <div className="table-badges opponent-action" role="group" aria-label="Biff action">
+              {prompt.mode === "bet" ? (
                 <span>Bet {formatMoney(prompt.call)}</span>
-              </div>
-            ) : null}
+              ) : (
+                <span className="table-badge-placeholder" aria-hidden="true" />
+              )}
+            </div>
           </CardRow>
           <div className="board-zone" role="group" aria-label="Board area">
             <CardRow label="Board cards" cards={prompt.board} hideLabel />
             <div className="table-badges" role="group" aria-label="Table status">
               {prompt.mode === "bet" ? (
                 <span>Pot {formatMoney(prompt.pot)}</span>
-              ) : null}
-              {prompt.mode === "chase" ? (
+              ) : prompt.mode === "chase" ? (
                 <span>Pot {formatMoney(prompt.pot)}</span>
-              ) : null}
+              ) : (
+                <span className="table-badge-placeholder table-badge-placeholder-pot" aria-hidden="true" />
+              )}
             </div>
           </div>
           <CardRow className="hero-zone" label="You" cards={prompt.hero} />

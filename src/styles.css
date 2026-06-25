@@ -352,10 +352,6 @@ button:disabled {
   justify-content: center;
 }
 
-.table-badges:empty {
-  display: none;
-}
-
 .table-badges span {
   background:
     linear-gradient(180deg, rgba(32, 24, 16, 0.88), rgba(16, 13, 10, 0.86)),
@@ -367,7 +363,18 @@ button:disabled {
   font-size: 0.8rem;
   font-weight: 900;
   line-height: 1.1;
+  min-height: 29px;
+  min-width: 72px;
   padding: 7px 10px;
+}
+
+.table-badge-placeholder {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.table-badges .table-badge-placeholder-pot {
+  min-width: 77px;
 }
 
 .action-pad,

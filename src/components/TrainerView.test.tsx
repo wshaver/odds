@@ -63,6 +63,25 @@ describe("TrainerView", () => {
     expect(screen.queryByText(/Pair|Two Pair|Trips|Straight|Flush|Full House/i)).not.toBeInTheDocument();
   });
 
+  test("reserves hidden bet and pot badge slots in odds mode", () => {
+    const prompt = generatePrompt("odds", "TrainerReservedBadgeSlots");
+
+    render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
+
+    const table = screen.getByRole("region", { name: "Poker table" });
+    const opponentSlot = table.querySelector(".opponent-action");
+    const boardSlot = table.querySelector(".board-zone > .table-badges");
+
+    expect(opponentSlot).not.toBeNull();
+    expect(boardSlot).not.toBeNull();
+    expect(opponentSlot).toContainElement(
+      opponentSlot?.querySelector(".table-badge-placeholder") ?? null,
+    );
+    expect(boardSlot).toContainElement(
+      boardSlot?.querySelector(".table-badge-placeholder") ?? null,
+    );
+  });
+
   test("keeps answer feedback in the feedback strip and filters choices after an incorrect answer", async () => {
     const user = userEvent.setup();
     const prompt = generatePrompt("odds", "TrainerAnswerFilterWrong");
