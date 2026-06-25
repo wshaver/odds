@@ -205,7 +205,8 @@ function isUsefulGeneratedPrompt(prompt: Prompt): boolean {
     biffOutcomes.win > 0 &&
     biffOutcomes.win < biffOutcomes.remaining &&
     correctBet !== null &&
-    correctBet > 1
+    correctBet > 1 &&
+    correctBet <= prompt.pot * 5
   );
 }
 

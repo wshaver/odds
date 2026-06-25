@@ -93,6 +93,7 @@ describe("questionGenerator", () => {
       expect(biffOutcomes.win, prompt.seed).toBeLessThan(biffOutcomes.remaining);
       expect(correctBet, prompt.seed).not.toBeNull();
       expect(correctBet ?? 0, prompt.seed).toBeGreaterThan(1);
+      expect(correctBet ?? 0, prompt.seed).toBeLessThanOrEqual(prompt.pot * 5);
     }
   });
 
