@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### CI result"
+            echo ""
+            echo "- Node: \`$(node -v)\`"
+            echo "- Tests: \`npm run test\` (vitest)"
+            echo "- Build: \`npm run build\` (tsc + vite)"
+          } >> "$GITHUB_STEP_SUMMARY"
