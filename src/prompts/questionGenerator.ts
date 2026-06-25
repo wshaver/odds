@@ -1,6 +1,12 @@
 import { buildDeck, type Card } from "../engine/cards";
 import { enumerateNextCardOutcomes, enumerateNextCardOutcomesFor } from "../engine/enumerator";
-import { chaseOutBet, maxCorrectCall, requiredEquity, shouldCall } from "../engine/potOdds";
+import {
+  callExpectedValue,
+  chaseOutBet,
+  maxCorrectCall,
+  requiredEquity,
+  shouldCall,
+} from "../engine/potOdds";
 import { COMMON_WIN_CHANCE_OPTIONS } from "./commonWinChanceOptions";
 import { createSeededRandom, shuffle } from "./seededRandom";
 import type { BetPrompt, ChasePrompt, OddsPrompt, Prompt, PromptMode } from "./types";
@@ -15,6 +21,7 @@ export type BetAnswerModel = {
   kind: "bet";
   correctAction: "call" | "fold";
   requiredEquity: number;
+  callExpectedValue: number;
 };
 
 export type ChaseAnswerModel = {
@@ -22,6 +29,7 @@ export type ChaseAnswerModel = {
   correctBet: number;
   highestCorrectCall: number;
   biffWinProbability: number;
+  correctBetExpectedValue: number;
   options: number[];
 };
 
@@ -152,6 +160,11 @@ export function getAnswerModel(prompt: Prompt): AnswerModel {
         winProbability: outcomes.winProbability,
       }),
       biffWinProbability: outcomes.winProbability,
+      correctBetExpectedValue: callExpectedValue({
+        pot: prompt.pot,
+        call: correctBet,
+        winProbability: outcomes.winProbability,
+      }),
       options: chaseOptions(correctBet, prompt.seed),
     };
   }
@@ -166,6 +179,11 @@ export function getAnswerModel(prompt: Prompt): AnswerModel {
       ? "call"
       : "fold",
     requiredEquity: requiredEquity(prompt.pot, prompt.call),
+    callExpectedValue: callExpectedValue({
+      pot: prompt.pot,
+      call: prompt.call,
+      winProbability: correctProbability,
+    }),
   };
 }
 

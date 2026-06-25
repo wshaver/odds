@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import { cardToString } from "../engine/cards";
 import { enumerateNextCardOutcomes } from "../engine/enumerator";
-import { chaseOutBet, requiredEquity, shouldCall } from "../engine/potOdds";
+import { callExpectedValue, chaseOutBet, requiredEquity, shouldCall } from "../engine/potOdds";
 import { parsePromptHash, promptToHash } from "./hashRouter";
 import { COMMON_WIN_CHANCE_OPTIONS } from "./commonWinChanceOptions";
 import { generatePrompt, getAnswerModel } from "./questionGenerator";
@@ -155,6 +155,13 @@ describe("questionGenerator", () => {
 
     expect(answer.kind).toBe("bet");
     expect(answer.requiredEquity).toBe(requiredEquity(prompt.pot, prompt.call));
+    expect(answer.callExpectedValue).toBe(
+      callExpectedValue({
+        pot: prompt.pot,
+        call: prompt.call,
+        winProbability,
+      }),
+    );
     expect(answer.correctAction).toBe(
       shouldCall({ pot: prompt.pot, call: prompt.call, winProbability })
         ? "call"
@@ -179,6 +186,13 @@ describe("questionGenerator", () => {
     expect(answer.correctBet).toBe(correctBet);
     expect(answer.highestCorrectCall).toBe((correctBet ?? 1) - 1);
     expect(answer.biffWinProbability).toBe(biffOutcomes.winProbability);
+    expect(answer.correctBetExpectedValue).toBe(
+      callExpectedValue({
+        pot: prompt.pot,
+        call: answer.correctBet,
+        winProbability: biffOutcomes.winProbability,
+      }),
+    );
     expect(answer.options).toHaveLength(3);
     expect(answer.options).toContain(answer.correctBet);
     expect(new Set(answer.options).size).toBe(3);

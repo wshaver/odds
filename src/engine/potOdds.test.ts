@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { chaseOutBet, maxCorrectCall, requiredEquity, shouldCall } from "./potOdds";
+import {
+  callExpectedValue,
+  chaseOutBet,
+  maxCorrectCall,
+  requiredEquity,
+  shouldCall,
+} from "./potOdds";
 
 describe("shouldCall", () => {
   it("returns true when win probability meets required equity", () => {
@@ -12,6 +18,17 @@ describe("requiredEquity", () => {
   it("rejects non-positive pot and call", () => {
     expect(() => requiredEquity(0, 30)).toThrow("Pot must be positive");
     expect(() => requiredEquity(120, 0)).toThrow("Call must be positive");
+  });
+});
+
+describe("callExpectedValue", () => {
+  it("returns positive money for profitable calls and negative money for bad calls", () => {
+    expect(callExpectedValue({ pot: 120, call: 30, winProbability: 0.25 })).toBe(7.5);
+    expect(callExpectedValue({ pot: 120, call: 30, winProbability: 0.1 })).toBe(-15);
+  });
+
+  it("is break-even at the required equity threshold", () => {
+    expect(callExpectedValue({ pot: 120, call: 30, winProbability: 0.2 })).toBe(0);
   });
 });
 

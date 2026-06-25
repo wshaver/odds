@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 
 import { enumerateNextCardOutcomes, enumerateNextCardOutcomesFor } from "../engine/enumerator";
-import { maxCorrectCall, requiredEquity } from "../engine/potOdds";
+import { callExpectedValue, maxCorrectCall, requiredEquity } from "../engine/potOdds";
 import { canonicalPromptKey } from "../prompts/hashRouter";
 import { getAnswerModel } from "../prompts/questionGenerator";
 import type { Prompt } from "../prompts/types";
@@ -114,6 +114,18 @@ export function TrainerView({
       correct: action === answerModel.correctAction,
     }));
   }, [answerModel]);
+  const selectedChaseBet =
+    activeAnswer !== null && answerModel.kind === "chase"
+      ? answerModel.options.find((option) => formatMoney(option) === activeAnswer.selected) ?? null
+      : null;
+  const selectedChaseBetExpectedValue =
+    selectedChaseBet !== null && prompt.mode === "chase" && answerModel.kind === "chase"
+      ? callExpectedValue({
+          pot: prompt.pot,
+          call: selectedChaseBet,
+          winProbability: answerModel.biffWinProbability,
+        })
+      : null;
   const visibleAnswerChoices =
     activeAnswer === null
       ? answerChoices
@@ -181,6 +193,12 @@ export function TrainerView({
                 <dd aria-hidden="true">{formatChipAmount(betMaxCorrectCall)}</dd>
               </div>
             ) : null}
+            {answerModel.kind === "bet" ? (
+              <div>
+                <dt>Call EV {formatSignedMoney(answerModel.callExpectedValue)}</dt>
+                <dd aria-hidden="true">{formatSignedMoney(answerModel.callExpectedValue)}</dd>
+              </div>
+            ) : null}
             {chaseHighestCorrectCall !== null ? (
               <div>
                 <dt>Highest correct call {formatChipAmount(chaseHighestCorrectCall)}</dt>
@@ -191,6 +209,20 @@ export function TrainerView({
               <div>
                 <dt>Lowest chase-out bet {formatChipAmount(chaseCorrectBet)}</dt>
                 <dd aria-hidden="true">{formatChipAmount(chaseCorrectBet)}</dd>
+              </div>
+            ) : null}
+            {selectedChaseBetExpectedValue !== null ? (
+              <div>
+                <dt>Selected bet EV {formatSignedMoney(selectedChaseBetExpectedValue)}</dt>
+                <dd aria-hidden="true">{formatSignedMoney(selectedChaseBetExpectedValue)}</dd>
+              </div>
+            ) : null}
+            {answerModel.kind === "chase" &&
+            selectedChaseBet !== null &&
+            selectedChaseBet !== answerModel.correctBet ? (
+              <div>
+                <dt>Correct bet EV {formatSignedMoney(answerModel.correctBetExpectedValue)}</dt>
+                <dd aria-hidden="true">{formatSignedMoney(answerModel.correctBetExpectedValue)}</dd>
               </div>
             ) : null}
           </dl>
@@ -372,6 +404,26 @@ function formatChipAmount(value: number): string {
 
 function formatMoney(value: number): string {
   return `$${value.toLocaleString("en-US")}`;
+}
+
+function formatSignedMoney(value: number): string {
+  const roundedValue = roundMoney(value);
+
+  if (roundedValue > 0) {
+    return `+${formatMoneyAmount(roundedValue)}`;
+  }
+  if (roundedValue < 0) {
+    return `-${formatMoneyAmount(Math.abs(roundedValue))}`;
+  }
+  return "$0";
+}
+
+function formatMoneyAmount(value: number): string {
+  return `$${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+}
+
+function roundMoney(value: number): number {
+  return Number(value.toFixed(2));
 }
 
 function roundProbability(value: number): number {

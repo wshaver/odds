@@ -4,7 +4,7 @@ import { describe, expect, test, vi } from "vitest";
 
 import { cardToString, parseCardList } from "../engine/cards";
 import { enumerateNextCardOutcomes } from "../engine/enumerator";
-import { chaseOutBet, maxCorrectCall } from "../engine/potOdds";
+import { callExpectedValue, chaseOutBet, maxCorrectCall } from "../engine/potOdds";
 import { canonicalPromptKey } from "../prompts/hashRouter";
 import { generatePrompt, getAnswerModel } from "../prompts/questionGenerator";
 import type { Prompt } from "../prompts/types";
@@ -20,6 +20,16 @@ function optionLabel(value: number): string {
 
 function formatMoney(value: number): string {
   return `$${value.toLocaleString("en-US")}`;
+}
+
+function formatMoneySigned(value: number): string {
+  if (value > 0) {
+    return `+$${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+  }
+  if (value < 0) {
+    return `-$${Math.abs(value).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+  }
+  return "$0";
 }
 
 function expectedOddsCorrect(prompt: Prompt, selected: string): boolean {
@@ -405,12 +415,41 @@ describe("TrainerView", () => {
         }),
       ),
     );
+    expect(screen.getByText(/Call EV/i)).toHaveTextContent(
+      formatMoneySigned(
+        callExpectedValue({
+          pot: prompt.pot,
+          call: prompt.call,
+          winProbability: enumerateNextCardOutcomes(prompt).winProbability,
+        }),
+      ),
+    );
     expect(onAnswered).toHaveBeenCalledTimes(1);
     expect(onAnswered).toHaveBeenCalledWith({
       key: canonicalPromptKey(prompt),
       selected: "Call",
       correct: model.correctAction === "call",
     });
+  });
+
+  test("shows call EV in bet mode after folding", async () => {
+    const user = userEvent.setup();
+    const prompt = generatePrompt("bet", "TrainerBetFoldEv");
+    const outcomes = enumerateNextCardOutcomes(prompt);
+
+    render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "Fold" }));
+
+    expect(screen.getByText(/Call EV/i)).toHaveTextContent(
+      formatMoneySigned(
+        callExpectedValue({
+          pot: prompt.pot,
+          call: prompt.call,
+          winProbability: outcomes.winProbability,
+        }),
+      ),
+    );
   });
 
   test("renders the pot near the board and the opponent bet near Biff in bet mode", () => {
@@ -461,12 +500,48 @@ describe("TrainerView", () => {
     expect(screen.getByText(/Lowest chase-out bet/i)).toHaveTextContent(
       formatMoney(correctBet ?? 0),
     );
+    expect(screen.getByText(/Selected bet EV/i)).toHaveTextContent(
+      formatMoneySigned(
+        callExpectedValue({
+          pot: prompt.pot,
+          call: model.options[0],
+          winProbability: biffOutcomes.winProbability,
+        }),
+      ),
+    );
+    if (model.options[0] !== model.correctBet) {
+      expect(screen.getByText(/Correct bet EV/i)).toHaveTextContent(
+        formatMoneySigned(
+          callExpectedValue({
+            pot: prompt.pot,
+            call: model.correctBet,
+            winProbability: biffOutcomes.winProbability,
+          }),
+        ),
+      );
+    }
     expect(screen.getByText(/Pushes are neutral and do not count as wins/i)).toBeInTheDocument();
     expect(onAnswered).toHaveBeenCalledWith({
       key: canonicalPromptKey(prompt),
       selected: formatMoney(model.options[0]),
       correct: model.options[0] === model.correctBet,
     });
+  });
+
+  test("omits correct bet EV in chase mode when the selected bet was correct", async () => {
+    const user = userEvent.setup();
+    const prompt = generatePrompt("chase", "TrainerChaseCorrectEv");
+    const model = getAnswerModel(prompt);
+    if (model.kind !== "chase") {
+      throw new Error("Expected chase prompt");
+    }
+
+    render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: formatMoney(model.correctBet) }));
+
+    expect(screen.getByText(/Selected bet EV/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Correct bet EV/i)).not.toBeInTheDocument();
   });
 
   test("does not call onAnswered again when clicking multiple odds answers after an answer", async () => {

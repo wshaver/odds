@@ -9,6 +9,12 @@ export type MaxCorrectCallInput = {
   winProbability: number;
 };
 
+export type CallExpectedValueInput = {
+  pot: number;
+  call: number;
+  winProbability: number;
+};
+
 export function requiredEquity(pot: number, call: number): number {
   if (pot <= 0) {
     throw new Error("Pot must be positive");
@@ -18,6 +24,20 @@ export function requiredEquity(pot: number, call: number): number {
   }
 
   return call / (pot + call);
+}
+
+export function callExpectedValue(input: CallExpectedValueInput): number {
+  if (input.pot <= 0) {
+    throw new Error("Pot must be positive");
+  }
+  if (input.call <= 0) {
+    throw new Error("Call must be positive");
+  }
+  if (input.winProbability < 0 || input.winProbability > 1) {
+    throw new Error("Win probability must be between 0 and 1");
+  }
+
+  return input.winProbability * input.pot - (1 - input.winProbability) * input.call;
 }
 
 export function maxCorrectCall(input: MaxCorrectCallInput): number {
