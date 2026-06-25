@@ -53,6 +53,16 @@ export function TrainerView({
         : enumerateNextCardOutcomes(prompt),
     [prompt],
   );
+  const youCardOutcomes = useMemo(() => enumerateNextCardOutcomes(prompt), [prompt]);
+  const biffCardOutcomes = useMemo(
+    () =>
+      enumerateNextCardOutcomesFor({
+        subject: prompt.opponent,
+        opponent: prompt.hero,
+        board: prompt.board,
+      }),
+    [prompt],
+  );
   const promptKey = useMemo(() => canonicalPromptKey(prompt), [prompt]);
   const betRequiredEquity = prompt.mode === "bet" ? requiredEquity(prompt.pot, prompt.call) : null;
   const betMaxCorrectCall =
@@ -64,7 +74,9 @@ export function TrainerView({
   const chaseCorrectBet = answerModel.kind === "chase" ? answerModel.correctBet : null;
   const isGuaranteedWin = outcomes.win === outcomes.remaining;
   const displayedWinOuts = isGuaranteedWin ? 0 : outcomes.win;
-  const hasWinningCards = !isGuaranteedWin && outcomes.winningCards.length > 0;
+  const hasCardReveal =
+    (youCardOutcomes.win > 0 && youCardOutcomes.win < youCardOutcomes.remaining) ||
+    (biffCardOutcomes.win > 0 && biffCardOutcomes.win < biffCardOutcomes.remaining);
   const [answer, setAnswer] = useState<AnswerState | null>(null);
   const [showWinningCards, setShowWinningCards] = useState(false);
   const activeAnswer =
@@ -187,20 +199,33 @@ export function TrainerView({
               ? "Already winning on every remaining card."
               : "Pushes are neutral and do not count as wins."}
           </p>
-          {hasWinningCards ? (
+          {hasCardReveal ? (
             <>
               <button
                 className="secondary-button"
                 onClick={() => setShowWinningCards((current) => !current)}
                 type="button"
               >
-                {showWinningCards ? "Hide winning cards" : "View winning cards"}
+                Show Cards
               </button>
               {showWinningCards ? (
-                <div className="winning-cards" aria-label="Winning cards">
-                  {outcomes.winningCards.map((card) => (
-                    <CardView card={card} key={`${card.rank}${card.suit}`} />
-                  ))}
+                <div className="winning-card-sections">
+                  <div className="winning-card-section" role="group" aria-label="You Win cards">
+                    <h3>You Win</h3>
+                    <div className="winning-cards">
+                      {youCardOutcomes.winningCards.map((card) => (
+                        <CardView card={card} key={`${card.rank}${card.suit}`} />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="winning-card-section" role="group" aria-label="Biff Wins cards">
+                    <h3>Biff Wins</h3>
+                    <div className="winning-cards">
+                      {biffCardOutcomes.winningCards.map((card) => (
+                        <CardView card={card} key={`${card.rank}${card.suit}`} />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               ) : null}
             </>

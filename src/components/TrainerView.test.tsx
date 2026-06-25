@@ -173,29 +173,43 @@ describe("TrainerView", () => {
     });
   });
 
-  test("shows winning cards only after answering when requested", async () => {
+  test("shows You Win and Biff Wins card sections after answering when requested", async () => {
     const user = userEvent.setup();
     const prompt = generatePrompt("odds", "TrainerWinningCards");
     const model = getAnswerModel(prompt);
     if (model.kind !== "odds") {
       throw new Error("Expected odds prompt");
     }
-    const outcomes = enumerateNextCardOutcomes(prompt);
+    const youOutcomes = enumerateNextCardOutcomes(prompt);
+    const biffOutcomes = enumerateNextCardOutcomes({
+      hero: prompt.opponent,
+      opponent: prompt.hero,
+      board: prompt.board,
+    });
 
     render(<TrainerView prompt={prompt} onNext={vi.fn()} onAnswered={vi.fn()} />);
 
     expect(
-      screen.queryByRole("button", { name: /View winning cards/i }),
+      screen.queryByRole("button", { name: "Show Cards" }),
     ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: optionLabel(model.options[0]) }));
 
-    expect(screen.queryByLabelText(cardToString(outcomes.winningCards[0]))).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "You Win cards" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Biff Wins cards" })).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /View winning cards/i }));
+    await user.click(screen.getByRole("button", { name: "Show Cards" }));
 
-    for (const card of outcomes.winningCards) {
-      expect(screen.getByLabelText(cardToString(card))).toBeInTheDocument();
+    const youSection = screen.getByRole("group", { name: "You Win cards" });
+    const biffSection = screen.getByRole("group", { name: "Biff Wins cards" });
+
+    expect(within(youSection).getByText("You Win")).toBeInTheDocument();
+    expect(within(biffSection).getByText("Biff Wins")).toBeInTheDocument();
+    for (const card of youOutcomes.winningCards) {
+      expect(within(youSection).getByLabelText(cardToString(card))).toBeInTheDocument();
+    }
+    for (const card of biffOutcomes.winningCards) {
+      expect(within(biffSection).getByLabelText(cardToString(card))).toBeInTheDocument();
     }
   });
 
@@ -219,7 +233,7 @@ describe("TrainerView", () => {
 
     expect(screen.getByText(/Win outs/i)).toHaveTextContent("0");
     expect(
-      screen.queryByRole("button", { name: /View winning cards/i }),
+      screen.queryByRole("button", { name: "Show Cards" }),
     ).not.toBeInTheDocument();
   });
 
@@ -251,7 +265,7 @@ describe("TrainerView", () => {
       screen.getByText(/Already winning on every remaining card/i),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /View winning cards/i }),
+      screen.queryByRole("button", { name: "Show Cards" }),
     ).not.toBeInTheDocument();
   });
 

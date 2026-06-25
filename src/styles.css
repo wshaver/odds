@@ -546,9 +546,23 @@ button:disabled {
   flex-wrap: wrap;
   gap: 7px;
   justify-content: flex-start;
-  margin-top: 12px;
+  margin-top: 8px;
   max-height: 168px;
   overflow: auto;
+}
+
+.winning-card-sections {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.winning-card-section h3 {
+  color: #ffe3a1;
+  font-size: 0.82rem;
+  line-height: 1.1;
+  margin: 0;
+  text-transform: uppercase;
 }
 
 .winning-cards .playing-card {
