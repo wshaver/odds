@@ -206,7 +206,7 @@ export function TrainerView({
                 onClick={() => setShowWinningCards((current) => !current)}
                 type="button"
               >
-                Show Cards
+                {showWinningCards ? "Hide Cards" : "Show Cards"}
               </button>
               {showWinningCards ? (
                 <div className="winning-card-sections">

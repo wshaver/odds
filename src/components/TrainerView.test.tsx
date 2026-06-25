@@ -205,6 +205,7 @@ describe("TrainerView", () => {
 
     expect(within(youSection).getByText("You Win")).toBeInTheDocument();
     expect(within(biffSection).getByText("Biff Wins")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Hide Cards" })).toBeInTheDocument();
     for (const card of youOutcomes.winningCards) {
       expect(within(youSection).getByLabelText(cardToString(card))).toBeInTheDocument();
     }
