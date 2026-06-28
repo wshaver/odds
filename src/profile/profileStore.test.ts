@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 import {
   loadProfile,
+  recordCampaignAnswer,
+  recordCampaignHandDealt,
   recordAnswer,
+  resetCampaign,
   resetProfile,
   saveProfile,
 } from "./profileStore";
@@ -38,9 +41,105 @@ describe("profileStore", () => {
         },
       weakSpots: {},
       answeredPrompts: {},
+      campaign: {
+        active: false,
+        bankroll: 500,
+        handsPlayed: 0,
+        nextMode: "bet",
+        history: [],
+      },
       settings: {},
     });
   });
+
+  test("recordCampaignHandDealt charges each hand once and alternates next mode", () => {
+    const result = recordCampaignHandDealt({
+      promptKey: "mode=bet&hero=6s7s&opponent=TdTc&board=8s9dKh2s&pot=100&call=30&seed=campaign1",
+      promptMode: "bet",
+    });
+
+    expect(result.dealt).toBe(true);
+    expect(result.bankrollDelta).toBe(-10);
+    expect(result.profile.campaign).toEqual({
+      active: true,
+      bankroll: 490,
+      handsPlayed: 1,
+      nextMode: "chase",
+      history: [
+        expect.objectContaining({
+          promptMode: "bet",
+          selected: null,
+          correct: null,
+          handCost: 10,
+          payout: 0,
+          bankrollDelta: -10,
+          bankrollAfter: 490,
+        }),
+      ],
+    });
+
+    const duplicate = recordCampaignHandDealt({
+      promptKey: "mode=bet&hero=6s7s&opponent=TdTc&board=8s9dKh2s&pot=100&call=30&seed=campaign1",
+      promptMode: "bet",
+    });
+
+    expect(duplicate.dealt).toBe(false);
+    expect(duplicate.profile.campaign.bankroll).toBe(490);
+    expect(duplicate.profile.campaign.handsPlayed).toBe(1);
+  });
+
+  test("recordCampaignAnswer applies payout after the hand cost was charged", () => {
+    recordCampaignHandDealt({
+      promptKey: "mode=bet&hero=6s7s&opponent=TdTc&board=8s9dKh2s&pot=100&call=30&seed=campaign1",
+      promptMode: "bet",
+    });
+
+    const result = recordCampaignAnswer({
+      promptKey: "mode=bet&hero=6s7s&opponent=TdTc&board=8s9dKh2s&pot=100&call=30&seed=campaign1",
+      promptMode: "bet",
+      selected: "Call",
+      correct: true,
+      payout: 24.5,
+    });
+
+    expect(result.bankrollDelta).toBe(24.5);
+    expect(result.profile.campaign).toEqual({
+      active: true,
+      bankroll: 514.5,
+      handsPlayed: 1,
+      nextMode: "chase",
+      history: [
+        expect.objectContaining({
+          promptMode: "bet",
+          selected: "Call",
+          correct: true,
+          handCost: 10,
+          payout: 24.5,
+          bankrollDelta: 14.5,
+          bankrollAfter: 514.5,
+        }),
+      ],
+    });
+  });
+
+  test("resetCampaign restores starting bankroll and clears campaign history", () => {
+    recordCampaignHandDealt({
+      promptKey: "mode=bet&hero=6s7s&opponent=TdTc&board=8s9dKh2s&pot=100&call=30&seed=campaign1",
+      promptMode: "bet",
+    });
+
+    const profile = resetCampaign();
+
+    expect(profile.campaign).toEqual({
+      active: false,
+      bankroll: 500,
+      handsPlayed: 0,
+      nextMode: "bet",
+      history: [],
+    });
+    expect(loadProfile().campaign).toEqual(profile.campaign);
+  });
+
 
   test("recordAnswer records an answer once per canonical key", () => {
     const first = recordAnswer({
@@ -183,6 +282,13 @@ describe("profileStore", () => {
         },
         weakSpots: {},
         answeredPrompts: {},
+        campaign: {
+          active: false,
+          bankroll: 500,
+          handsPlayed: 0,
+          nextMode: "bet",
+          history: [],
+        },
         settings: {},
       }),
     );
@@ -258,6 +364,13 @@ function expectDefaultProfile(profile: unknown) {
     },
     weakSpots: {},
     answeredPrompts: {},
+    campaign: {
+      active: false,
+      bankroll: 500,
+      handsPlayed: 0,
+      nextMode: "bet",
+      history: [],
+    },
     settings: {},
   });
 }

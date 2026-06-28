@@ -35,7 +35,8 @@ describe("questionGenerator", () => {
     expect(prompt.opponent).toHaveLength(2);
     expect(prompt.board).toHaveLength(4);
     expect(prompt.seed).toMatch(/^[A-Za-z0-9]+$/);
-    expect(prompt.pot).toBeGreaterThan(0);
+    expect(prompt.pot).toBeGreaterThanOrEqual(50);
+    expect(prompt.pot).toBeLessThanOrEqual(150);
     expect(prompt.call).toBeGreaterThan(0);
     expect(parsePromptHash(promptToHash(prompt))).toEqual(prompt);
   });
@@ -48,9 +49,28 @@ describe("questionGenerator", () => {
     expect(prompt.opponent).toHaveLength(2);
     expect(prompt.board).toHaveLength(4);
     expect(prompt.seed).toMatch(/^[A-Za-z0-9]+$/);
-    expect(prompt.pot).toBeGreaterThan(0);
+    expect(prompt.pot).toBeGreaterThanOrEqual(50);
+    expect(prompt.pot).toBeLessThanOrEqual(150);
     expect(Number.isInteger(prompt.pot)).toBe(true);
     expect(parsePromptHash(promptToHash(prompt))).toEqual(prompt);
+  });
+
+  test("generated bet and chase pots stay in the normalized range with a 100 average", () => {
+    for (const mode of ["bet", "chase"] as const) {
+      const pots = Array.from({ length: 210 }, (_, index) => {
+        if (mode === "bet") {
+          return generatePrompt("bet", `Normalized${mode}${index}`).pot;
+        }
+
+        return generatePrompt("chase", `Normalized${mode}${index}`).pot;
+      });
+      const average = pots.reduce((sum, pot) => sum + pot, 0) / pots.length;
+
+      expect(Math.min(...pots), mode).toBeGreaterThanOrEqual(50);
+      expect(Math.max(...pots), mode).toBeLessThanOrEqual(150);
+      expect(average, mode).toBeGreaterThanOrEqual(98);
+      expect(average, mode).toBeLessThanOrEqual(102);
+    }
   });
 
   test("generated prompts have no duplicate cards", () => {

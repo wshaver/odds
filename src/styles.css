@@ -91,23 +91,24 @@ button:disabled {
   border-radius: 10px;
   display: flex;
   flex: 0 0 auto;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 3px;
-  min-width: 164px;
+  min-width: max-content;
+  overflow-x: auto;
   padding: 3px;
-  width: min(100%, 360px);
+  width: max-content;
 }
 
 .mode-buttons button {
   background: transparent;
   border-color: transparent;
   color: #dfd1b5;
-  flex: 1 1 74px;
+  flex: 0 0 auto;
   font-weight: 800;
   min-height: 34px;
-  min-width: 0;
-  overflow-wrap: anywhere;
+  min-width: 76px;
   padding: 6px 12px;
+  white-space: nowrap;
 }
 
 .mode-buttons button:hover:not(:disabled) {
@@ -127,6 +128,80 @@ button:disabled {
 .trainer-layout {
   margin: 0 auto;
   max-width: 1080px;
+}
+
+.campaign-progress {
+  align-items: center;
+  background: rgba(18, 17, 15, 0.78);
+  border: 1px solid rgba(213, 174, 98, 0.22);
+  border-radius: 10px;
+  color: #ead6ad;
+  display: grid;
+  font-size: 0.9rem;
+  gap: 10px 16px;
+  grid-template-columns: minmax(220px, 1fr) auto auto;
+  justify-content: stretch;
+  margin: 0 auto 12px;
+  max-width: 1080px;
+  padding: 8px 12px;
+}
+
+.campaign-start {
+  color: #ead6ad;
+  margin: 0 auto 16px;
+  max-width: 1080px;
+}
+
+.campaign-start h2 {
+  color: #fff4db;
+  font-size: 1.25rem;
+  line-height: 1.1;
+  margin: 0 0 8px;
+}
+
+.campaign-start p,
+.campaign-start ul {
+  line-height: 1.4;
+  margin: 0 0 12px;
+}
+
+.campaign-start ul {
+  padding-left: 20px;
+}
+
+.campaign-brief {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.campaign-brief strong {
+  color: #fff4db;
+}
+
+.campaign-brief span {
+  color: #d8c7a5;
+}
+
+.campaign-metrics {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  font-weight: 800;
+  gap: 8px 14px;
+  justify-content: center;
+}
+
+.campaign-restart-button {
+  align-self: center;
+  background: rgba(255, 246, 228, 0.94);
+  border-color: #d3ad63;
+  color: #24170d;
+  font-size: 0.86rem;
+  font-weight: 900;
+  min-height: 34px;
+  padding: 6px 10px;
+  white-space: nowrap;
 }
 
 .table-stage {
@@ -656,6 +731,19 @@ button:disabled {
     justify-self: stretch;
     min-width: 0;
     width: 100%;
+  }
+
+  .mode-buttons button {
+    flex: 1 0 auto;
+  }
+
+  .campaign-progress {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+
+  .campaign-metrics {
+    justify-content: flex-start;
   }
 
   .table-stage {

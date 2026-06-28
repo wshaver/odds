@@ -51,24 +51,25 @@ export function generatePrompt(mode: "chase", seed?: string): ChasePrompt;
 export function generatePrompt(mode: PromptMode, seed?: string): Prompt;
 export function generatePrompt(mode: PromptMode, seed = randomSeed()): Prompt {
   for (let attempt = 0; attempt < 100; attempt += 1) {
-    const prompt = buildPrompt(mode, seedForAttempt(seed, attempt));
+    const prompt = buildPrompt(mode, seedForAttempt(seed, attempt), seed);
     if (isUsefulGeneratedPrompt(prompt)) {
       return prompt;
     }
   }
 
   for (let attempt = 100; attempt < 1000; attempt += 1) {
-    const prompt = buildPrompt(mode, seedForAttempt(seed, attempt));
+    const prompt = buildPrompt(mode, seedForAttempt(seed, attempt), seed);
     if (isUsefulGeneratedPrompt(prompt)) {
       return prompt;
     }
   }
 
-  return buildPrompt(mode, seedForAttempt("ChaseFixture", 1));
+  return buildPrompt(mode, seedForAttempt("ChaseFixture", 1), "ChaseFixture");
 }
 
-function buildPrompt(mode: PromptMode, seed: string): Prompt {
+function buildPrompt(mode: PromptMode, seed: string, potSeed: string): Prompt {
   const compactSeed = compactAlphanumericSeed(seed);
+  const potSeedKey = alphanumericSeedKey(potSeed);
   const random = createSeededRandom(compactSeed);
   const cards = shuffle(buildDeck(), `${compactSeed}:cards`);
   const hero = cards.slice(0, 2);
@@ -86,7 +87,7 @@ function buildPrompt(mode: PromptMode, seed: string): Prompt {
     } satisfies OddsPrompt;
   }
 
-  const pot = positiveChipAmount(random, 4, 40, 5);
+  const pot = normalizedPot(potSeedKey);
 
   if (mode === "chase") {
     return {
@@ -94,7 +95,7 @@ function buildPrompt(mode: PromptMode, seed: string): Prompt {
       hero,
       opponent,
       board,
-      pot: positiveChipAmount(random, 20, 160, 1),
+      pot,
       seed: compactSeed,
     } satisfies ChasePrompt;
   }
@@ -299,8 +300,23 @@ function positiveChipAmount(
   return (minUnits + Math.floor(random() * (maxUnits - minUnits + 1))) * unitSize;
 }
 
+function normalizedPot(seed: string): number {
+  return (10 + (stableHash(`${seed}:pot`) % 21)) * 5;
+}
+
+function stableHash(value: string): number {
+  let hash = 2166136261;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+
+  return hash;
+}
+
 function compactAlphanumericSeed(seed: string): string {
-  const compact = seed.replace(/[^A-Za-z0-9]/g, "");
+  const compact = alphanumericSeedKey(seed);
   if (compact.length > 0) {
     return compact.slice(0, 12);
   }
@@ -311,4 +327,8 @@ function compactAlphanumericSeed(seed: string): string {
     fallback += SEED_ALPHABET[Math.floor(random() * SEED_ALPHABET.length)];
   }
   return fallback;
+}
+
+function alphanumericSeedKey(seed: string): string {
+  return seed.replace(/[^A-Za-z0-9]/g, "");
 }

@@ -18,6 +18,11 @@ export type TrainerViewProps = {
   onNext: () => void;
   onAnswered: (answer: TrainerAnswer) => void;
   restoredAnswer?: Omit<TrainerAnswer, "key"> | null;
+  campaignFeedback?: {
+    promptKey: string;
+    bankroll: number;
+    bankrollDelta: number;
+  } | null;
 };
 
 type AnswerState = {
@@ -37,6 +42,7 @@ export function TrainerView({
   onNext,
   onAnswered,
   restoredAnswer = null,
+  campaignFeedback = null,
 }: TrainerViewProps) {
   const answerModel = useMemo(
     () => getAnswerModel(prompt),
@@ -77,6 +83,8 @@ export function TrainerView({
   const hasCardReveal =
     (youCardOutcomes.win > 0 && youCardOutcomes.win < youCardOutcomes.remaining) ||
     (biffCardOutcomes.win > 0 && biffCardOutcomes.win < biffCardOutcomes.remaining);
+  const activeCampaignFeedback =
+    campaignFeedback?.promptKey === promptKey ? campaignFeedback : null;
   const [answer, setAnswer] = useState<AnswerState | null>(null);
   const [showWinningCards, setShowWinningCards] = useState(false);
   const activeAnswer =
@@ -215,6 +223,26 @@ export function TrainerView({
               <div>
                 <dt>Selected bet EV {formatSignedMoney(selectedChaseBetExpectedValue)}</dt>
                 <dd aria-hidden="true">{formatSignedMoney(selectedChaseBetExpectedValue)}</dd>
+              </div>
+            ) : null}
+            {activeCampaignFeedback !== null ? (
+              <div>
+                <dt>
+                  Campaign result {formatSignedMoney(activeCampaignFeedback.bankrollDelta)}
+                </dt>
+                <dd aria-hidden="true">
+                  {formatSignedMoney(activeCampaignFeedback.bankrollDelta)}
+                </dd>
+              </div>
+            ) : null}
+            {activeCampaignFeedback !== null ? (
+              <div>
+                <dt>
+                  Campaign bankroll {formatMoneyAmount(activeCampaignFeedback.bankroll)}
+                </dt>
+                <dd aria-hidden="true">
+                  {formatMoneyAmount(activeCampaignFeedback.bankroll)}
+                </dd>
               </div>
             ) : null}
             {answerModel.kind === "chase" &&
